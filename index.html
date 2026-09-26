@@ -109,9 +109,6 @@
         }
         .checkbox-label { cursor: pointer; transition: all 0.15s; }
         .checkbox-label:hover { background-color: #f3f4f6; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .glow-cyan { box-shadow: none; }
-        .glow-violet { box-shadow: none; }
         .progress-glow { box-shadow: none; }
         .diario-warn {
             background: #fffbeb;
@@ -142,8 +139,6 @@
         .scell-entry:hover { filter: brightness(0.97); }
         .scell-free { background: transparent; border: 1px solid transparent; color: #94a3b8; }
         .scell-free:hover { background: #f3f4f6; border-color: #e5e7eb; color: #6b7280; }
-        .scell-free-note { background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; }
-        .scell-free-note:hover { background: #d1fae5; border-color: #6ee7b7; }
         .scell-today { box-shadow: inset 0 0 0 2px #6366f1; }
         /* Fechas en período estival (1 jul – 14 sept): atenuadas, sin horario */
         .scell-summer { opacity: 0.35; cursor: default; }
@@ -171,12 +166,10 @@
             .scell-future-entry { animation: none; box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.5); }
             .scell-future-entry::after { animation: none; }
         }
-        .scell-preview { font-size: 0.55rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
         .scell-check { font-size: 0.75rem; font-weight: 800; line-height: 1; margin-top: 2px; opacity: 0.9; }
         /* Nombre de grupo en celdas: truncar para evitar overflow/superposición */
         .scell-group-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; padding: 0 2px; }
         .week-card { border-radius: 1rem; overflow: hidden; }
-        .week-card.current-week { ring: 1px; }
         /* Panel desplegable "Ir a…" para saltar a cualquier semana del curso */
         #weekJumpDetails > summary::-webkit-details-marker { display: none; }
         #weekJumpDetails[open] > summary { background: #eef2ff; border-color: #c7d2fe; color: #4f46e5; }
@@ -261,46 +254,6 @@
         .ctag-fl-meta { font-size: 0.68rem; color: #9ca3af; margin-top: 2px; }
         .ctag-fl-bloque { font-size: 0.75rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; padding: 4px 0 2px; border-bottom: 1px solid #e5e7eb; margin: 12px 0 4px; }
         .ctag-fl-bloque:first-child { margin-top: 0; }
-        /* Criteria popover (JS-positioned fixed) */
-        .ctag-popover {
-            position: fixed;
-            opacity: 0; visibility: hidden; pointer-events: none;
-            transition: opacity 0.2s ease, visibility 0.2s ease;
-            min-width: min(90vw, 800px); max-width: min(95vw, 1100px); max-height: 75vh;
-            z-index: 9999;
-        }
-        .ctag-popover.visible {
-            opacity: 1; visibility: visible; pointer-events: auto;
-        }
-        .ctag-popover-inner {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.75rem; overflow: hidden;
-            box-shadow: 0 10px 40px rgba(15, 23, 42, 0.12);
-        }
-        .ctag-popover-head {
-            padding: 14px 18px 10px; border-bottom: 1px solid #e5e7eb;
-            position: sticky; top: 0; background: #ffffff;
-            z-index: 1;
-        }
-        .ctag-popover-body {
-            padding: 10px 14px 14px; overflow-y: auto; max-height: calc(75vh - 60px);
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 0 20px;
-        }
-        .cpop-empty { padding: 24px; text-align: center; color: #9ca3af; font-size: 0.85rem; }
-        .cpop-bloque { margin-top: 10px; }
-        .cpop-bloque:first-child { margin-top: 0; }
-        .cpop-bloque-title { font-size: 0.75rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; padding: 4px 0 2px; border-bottom: 1px solid #e5e7eb; margin-bottom: 4px; }
-        .cpop-item {
-            display: flex; align-items: flex-start; gap: 10px;
-            padding: 7px 10px; border-radius: 0.5rem; margin-bottom: 2px;
-            transition: background 0.15s;
-        }
-        .cpop-item:hover { background: #f3f4f6; }
-        .cpop-item-icon { font-size: 0.9rem; margin-top: 1px; flex-shrink: 0; }
-        .cpop-item-name { font-size: 0.8rem; font-weight: 600; color: #0f172a; }
-        .cpop-item-text { font-size: 0.72rem; color: #6b7280; line-height: 1.4; margin-top: 1px; }
-        .cpop-item-meta { font-size: 0.68rem; color: #9ca3af; margin-top: 2px; }
         input[type="file"]::file-selector-button {
             background: #eef2ff;
             color: #4f46e5;
@@ -400,7 +353,6 @@
         .glass-nav { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
 
         /* Touch targets mínimos: 44x44px (Apple) / 48dp (Material) */
-        .touch-target { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; }
         /* Mejora global de touch targets para botones de icono pequeños en listas/tarjetas */
         .glass.rounded-xl button[class*="p-1"]:has(svg),
         .orphan-entry button:has(svg),
@@ -447,8 +399,6 @@
             .scell-table .hour-label { padding: 2px 3px; font-size: 0.5rem; }
             /* Modales: ocupan casi toda la pantalla en móvil */
             .modal-overlay { padding: 0.5rem !important; }
-            /* Iconos de acción en tarjetas: touch target mayor */
-            .card-action-btn { padding: 0.5rem !important; }
             /* Filtro selects de grupo: ancho flexible en móvil */
             select[id$="GroupFilter"] { min-width: 0 !important; flex: 1; max-width: 200px; }
             /* Informes: tarjetas de métricas apiladas */
@@ -459,13 +409,6 @@
         /* Tablets: ajustes intermedios */
         @media (min-width: 641px) and (max-width: 1024px) {
             .ctag { font-size: 0.82rem; }
-        }
-
-        /* Reportes HTML generados en popup: responsive */
-        @media (max-width: 640px) {
-            .report-doc body { margin: 0.5cm !important; }
-            .report-doc table { font-size: 0.7rem !important; display: block; overflow-x: auto; white-space: nowrap; }
-            .report-doc th, .report-doc td { padding: 4px 6px !important; }
         }
 
         /* ============================================================
@@ -1043,22 +986,15 @@
     }
 
     let firebaseReady = false;
-    let firebaseSyncing = false;
     let remoteVersion = 0;
     let localVersion = 0;
-
-    // El indicador visual de estado Firebase (punto + texto) se eliminó de la cabecera.
-    // Esta función se conserva como no-op porque el código de sincronización en segundo plano la llama.
-    function setFirebaseStatus(status, text) { /* no-op: UI removed */ }
 
     // Escuchar estado de conexión Firebase
     db.ref('.info/connected').on('value', (snap) => {
         if (snap.val() === true) {
             firebaseReady = true;
-            setFirebaseStatus('online', 'Conectado');
         } else {
             firebaseReady = false;
-            setFirebaseStatus('offline', 'Sin conexión');
         }
     });
 
@@ -1110,9 +1046,6 @@
             if (remote.checksum !== expectedChecksum) {
                 console.warn('Checksum mismatch, re-guardando datos...');
                 saveDataFirebase();
-                setFirebaseStatus('online', 'Corregido');
-            } else {
-                setFirebaseStatus('online', 'Sincronizado');
             }
         }
     });
@@ -1121,10 +1054,7 @@
     // Se usa un debounce de 600ms para agrupar cambios rápidos y no saturar Firebase
     let firebaseDebounceTimer = null;
     function saveDataFirebase() {
-        if (!firebaseReady) {
-            setFirebaseStatus('offline', 'Sin conexión');
-            return Promise.resolve(false);
-        }
+        if (!firebaseReady) return Promise.resolve(false);
 
         // Cancelar envío anterior pendiente (debounce)
         if (firebaseDebounceTimer) {
@@ -1133,9 +1063,6 @@
 
         return new Promise((resolve) => {
             firebaseDebounceTimer = setTimeout(() => {
-                firebaseSyncing = true;
-                setFirebaseStatus('syncing', 'Subiendo...');
-
                 localVersion++;
                 const checksum = computeChecksum(appData);
                 const payload = {
@@ -1151,17 +1078,12 @@
                 db.ref(FB_PATH + '/data').set(payload)
                     .then(() => {
                         remoteVersion = localVersion;
-                        setFirebaseStatus('online', 'Conectado');
                         resolve(true);
                     })
                     .catch((err) => {
                         localVersion--;
                         console.error('Error guardando en Firebase:', err);
-                        setFirebaseStatus('error', 'Error al guardar');
                         resolve(false);
-                    })
-                    .finally(() => {
-                        firebaseSyncing = false;
                     });
             }, 600);
         });
@@ -3256,7 +3178,6 @@ ${body}
         const loaded = await loadDataFromFirebase();
         if (loaded) {
             saveDataLocal(); // Actualizar localStorage con datos de Firebase
-            setFirebaseStatus('online', 'Cargado de nube');
         }
         // Posicionar el Diario en la semana apropiada del curso activo
         // (semana actual si hoy cae dentro del curso, o primera/última en caso contrario).
