@@ -1047,15 +1047,52 @@
     let firebaseReady = false;
     let remoteVersion = 0;
     let localVersion = 0;
+    // Marcado cuando hay cambios locales que no se pudieron subir (sin conexión).
+    // Al reconectar, syncPendingChanges() los fusiona con lo remoto y los sube.
+    let pendingSyncPush = false;
 
     // Escuchar estado de conexión Firebase
     db.ref('.info/connected').on('value', (snap) => {
         if (snap.val() === true) {
             firebaseReady = true;
+            if (pendingSyncPush) { pendingSyncPush = false; syncPendingChanges(); }
         } else {
             firebaseReady = false;
         }
     });
+
+    // Sincroniza los cambios locales pendientes tras una desconexión:
+    // aplica el estado remoto (protegiendo las creaciones locales vía merge)
+    // y sube el resultado fusionado.
+    async function syncPendingChanges() {
+        try {
+            const snap = await db.ref(FB_PATH + '/data').once('value');
+            if (!snap.exists()) { saveDataFirebase(); return; }
+            const remote = snap.val();
+            if (!remote || !remote.payload || remote.signature !== APP_SIGNATURE) { saveDataFirebase(); return; }
+            const rv = remote.version || 0;
+            if (rv > localVersion) {
+                const localCurrent = appData.currentCourseId;
+                mergeLocalCreations(appData, remote.payload);
+                appData = remote.payload;
+                normalizeAppData();
+                if (localCurrent && appData.courses.some(c => c.id === localCurrent) && appData.courseData[localCurrent]) {
+                    appData.currentCourseId = localCurrent;
+                    data = appData.courseData[localCurrent];
+                }
+                normalizeData();
+                localVersion = rv;
+                saveDataLocal();
+                populateCourseSelector();
+                updateAllGroupSelects();
+                showTab(activeTab);
+            }
+            saveDataFirebase();
+        } catch (e) {
+            console.warn('Error sincronizando cambios pendientes:', e);
+            pendingSyncPush = true;
+        }
+    }
 
     // Variable para saber qué pestaña está activa y re-renderizar tras sincronizar
     let activeTab = 'diario';
@@ -1142,7 +1179,7 @@
     }
 
     function saveDataFirebase() {
-        if (!firebaseReady) return Promise.resolve(false);
+        if (!firebaseReady) { pendingSyncPush = true; return Promise.resolve(false); }
 
         // Cancelar envío anterior pendiente (debounce)
         if (firebaseDebounceTimer) {
@@ -1166,10 +1203,12 @@
                 db.ref(FB_PATH + '/data').set(payload)
                     .then(() => {
                         remoteVersion = localVersion;
+                        pendingSyncPush = false;
                         resolve(true);
                     })
                     .catch((err) => {
                         localVersion--;
+                        pendingSyncPush = true;
                         console.error('Error guardando en Firebase:', err);
                         resolve(false);
                     });
@@ -1604,8 +1643,8 @@
     });
 
     // GRUPOS
-    function addGroup(e, inputId) { e.preventDefault(); const inp = document.getElementById(inputId || 'groupName'); const n = (inp ? inp.value : '').trim(); if(!n || data.groups.find(g=>g.name.toLowerCase()===n.toLowerCase())) { alert('Grupo existente o vacío'); return; } data.groups.push({id:generateId(), name:n}); saveData(); inp.value=''; renderGroups(); updateAllGroupSelects(); }
-    function deleteGroup(id) { if(!confirm('¿Eliminar grupo? Se borrarán también sus alumnos.')) return; data.groups=data.groups.filter(g=>g.id!==id); data.students=data.students.filter(s=>s.groupId!==id); saveData(); if(editingGroupId===id) editingGroupId=null; renderGroups(); updateAllGroupSelects(); renderStudents(); }
+    function addGroup(e) { e.preventDefault(); const inp = document.getElementById('groupName'); const n = (inp ? inp.value : '').trim(); if(!n || data.groups.find(g=>g.name.toLowerCase()===n.toLowerCase())) { alert('Grupo existente o vacío'); return; } data.groups.push({id:generateId(), name:n}); saveData(); inp.value=''; renderGroups(); updateAllGroupSelects(); }
+    function deleteGroup(id) { if(!confirm('¿Eliminar grupo? Se borrarán también sus alumnos y sus observaciones.')) return; const removedStudentIds = data.students.filter(s=>s.groupId===id).map(s=>s.id); data.groups=data.groups.filter(g=>g.id!==id); data.students=data.students.filter(s=>s.groupId!==id); data.observations=(data.observations||[]).filter(o=>!removedStudentIds.includes(o.studentId)); saveData(); if(editingGroupId===id) editingGroupId=null; renderGroups(); updateAllGroupSelects(); renderStudents(); }
     let editingGroupId = null;
     function startGroupEdit(id) { editingGroupId = id; renderGroups(); const inp = document.getElementById('groupRenameInput'); if (inp) { inp.focus(); inp.select(); } }
     function cancelGroupEdit() { editingGroupId = null; renderGroups(); }
@@ -1633,9 +1672,9 @@
             h=gs.map(g=>{
                 const cnt=st.filter(s=>s.groupId===g.id).length;
                 if (editingGroupId===g.id) {
-                    return `<div class="bg-slate-800/50 rounded-xl px-4 py-3 border border-indigo-300/50"><div class="flex items-center gap-2"><input type="text" id="groupRenameInput" value="${g.name.replace(/"/g,'&quot;')}" class="flex-1 glass-input rounded-lg px-3 py-2 text-sm" onkeydown="if(event.key==='Enter'){event.preventDefault();saveGroupName('${g.id}');}else if(event.key==='Escape'){cancelGroupEdit();}"><button onclick="saveGroupName('${g.id}')" title="Guardar nombre" class="text-emerald-500 hover:text-emerald-400 p-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button><button onclick="cancelGroupEdit()" title="Cancelar" class="text-slate-400 hover:text-slate-600 p-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div></div>`;
+                    return `<div class="bg-slate-800/50 rounded-xl px-4 py-3 border border-indigo-300/50"><div class="flex items-center gap-2"><input type="text" id="groupRenameInput" value="${escHtml(g.name)}" class="flex-1 glass-input rounded-lg px-3 py-2 text-sm" onkeydown="if(event.key==='Enter'){event.preventDefault();saveGroupName('${g.id}');}else if(event.key==='Escape'){cancelGroupEdit();}"><button onclick="saveGroupName('${g.id}')" title="Guardar nombre" class="text-emerald-500 hover:text-emerald-400 p-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button><button onclick="cancelGroupEdit()" title="Cancelar" class="text-slate-400 hover:text-slate-600 p-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div></div>`;
                 }
-                return `<div class="flex items-center justify-between bg-slate-800/50 rounded-xl px-4 py-3 border border-slate-700/40"><div class="flex items-center gap-3 min-w-0"><div class="bg-cyan-500/15 text-cyan-400 rounded-lg px-3 py-1 font-bold text-sm">${g.name}</div><span class="text-slate-400 text-sm whitespace-nowrap">${cnt} alumno(s)</span></div><div class="flex items-center gap-1"><button onclick="startGroupEdit('${g.id}')" title="Renombrar grupo" class="text-slate-400 hover:text-indigo-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="deleteGroup('${g.id}')" title="Eliminar grupo" class="text-red-400 hover:text-red-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></div>`;
+                return `<div class="flex items-center justify-between bg-slate-800/50 rounded-xl px-4 py-3 border border-slate-700/40"><div class="flex items-center gap-3 min-w-0"><div class="bg-cyan-500/15 text-cyan-400 rounded-lg px-3 py-1 font-bold text-sm">${escHtml(g.name)}</div><span class="text-slate-400 text-sm whitespace-nowrap">${cnt} alumno(s)</span></div><div class="flex items-center gap-1"><button onclick="startGroupEdit('${g.id}')" title="Renombrar grupo" class="text-slate-400 hover:text-indigo-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="deleteGroup('${g.id}')" title="Eliminar grupo" class="text-red-400 hover:text-red-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></div>`;
             }).join('');
         }
         const c = document.getElementById('groupList');
@@ -1643,7 +1682,8 @@
         const gh = document.getElementById('accGruposHint');
         if (gh) gh.textContent = gs.length ? ` · ${gs.length} grupo(s)` : '';
     }
-    function updateAllGroupSelects() { const gs=data.groups||[]; ['studentGrupo','senecaGrupo','filterStudentGrupo','scheduleGrupoSelect'].forEach(id => { const el=document.getElementById(id); if(!el) return; const cv=el.value; const isF=id.includes('Filter'); el.innerHTML=`<option value="">${isF?'Todos':'Selecciona'}</option>`; gs.forEach(g => el.innerHTML+=`<option value="${g.id}">${g.name}</option>`); el.value=cv; }); }
+    function updateAllGroupSelects() { const gs=data.groups||[]; ['studentGrupo','senecaGrupo','filterStudentGrupo','scheduleGrupoSelect'].forEach(id => { const el=document.getElementById(id); if(!el) return; const cv=el.value; const isF=id.includes('Filter'); el.innerHTML=`<option value="">${isF?'Todos':'Selecciona'}</option>`; gs.forEach(g => el.innerHTML+=`<option value="${g.id}">${escHtml(g.name)}</option>`); // Si el grupo seleccionado dejó de existir, vuelve al valor por defecto
+ el.value=(cv && gs.some(g=>g.id===cv)) ? cv : ''; }); }
 
     // HORARIO
     function renderSchedule() { let h=''; const sch=data.schedule||{}; const gs=data.groups||[]; HOURS.forEach((hora,hi)=>{ h+=`<tr class="border-b border-slate-700/30 hover:bg-slate-700/30"><td class="p-2 font-medium text-slate-300 text-xs">${hora}</td>`; DAYS.forEach((day,di)=>{ const k=`${di}-${hi}`; const grp=sch[k]; const gn=grp?gs.find(g=>g.id===grp)?.name||'':''; h+=`<td class="p-1 text-center hover:bg-cyan-500/10"><div class="min-h-[40px] flex items-center justify-center gap-1">${gn?`<span class="bg-cyan-500/15 text-cyan-400 rounded px-2 py-1 text-xs font-medium cursor-pointer" onclick="openScheduleModal('${k}')">${gn}</span>`:`<button onclick="openScheduleModal('${k}')" class="text-slate-500 hover:text-cyan-400 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></button>`}</div></td>`; }); h+='</tr>'; }); document.getElementById('scheduleBody').innerHTML=h; }
@@ -1655,7 +1695,7 @@
     // ALUMNADO
     function addStudent(e) { e.preventDefault(); const n=document.getElementById('studentName').value.trim(); const g=document.getElementById('studentGrupo').value; if(!n||!g) return; data.students.push({id:generateId(), name:n, groupId:g}); saveData(); document.getElementById('studentName').value=''; renderStudents(); renderGroups(); }
     function deleteStudent(id) { if(!confirm('¿Eliminar alumno?')) return; data.students=data.students.filter(s=>s.id!==id); data.observations=data.observations.filter(o=>o.studentId!==id); saveData(); renderStudents(); renderGroups(); }
-    function renderStudents() { const c=document.getElementById('studentList'); const lh=document.getElementById('accListadoHint'); if (lh) lh.textContent = (data.students||[]).length ? ` · ${(data.students||[]).length} alumno(s)` : ''; const fg=document.getElementById('filterStudentGrupo')?.value||''; const sr=document.getElementById('searchStudent')?.value?.toLowerCase()||''; let f=data.students; if(fg) f=f.filter(s=>s.groupId===fg); if(sr) f=f.filter(s=>s.name.toLowerCase().includes(sr)); if(!f.length) { c.innerHTML='<p class="text-slate-400 text-center py-8">Sin alumnos</p>'; return; } const grp={}; f.forEach(s=>{if(!grp[s.groupId])grp[s.groupId]=[];grp[s.groupId].push(s);}); let h=''; Object.keys(grp).forEach(gId=>{ const g=data.groups.find(g=>g.id===gId); h+=`<div class="mb-4"><h3 class="font-bold text-slate-200 mb-2 bg-slate-800/40 px-3 py-1.5 rounded-lg border border-slate-700/40">${g?.name||'Sin grupo'} (${grp[gId].length})</h3><div class="space-y-1">`; grp[gId].forEach(s=>{ const oc=data.observations.filter(o=>o.studentId===s.id).length; h+=`<div class="flex items-center justify-between bg-slate-800/40 rounded-xl px-4 py-2.5 border border-slate-700/30 hover:bg-slate-700/40"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-gradient-to-br from-cyan-400 to-violet-500 rounded-full flex items-center justify-center text-white text-xs font-bold">${s.name.charAt(0).toUpperCase()}</div><span class="font-medium text-slate-200 text-sm">${s.name}</span></div><div class="flex items-center gap-2">${oc>0?`<button onclick="openObsModal('${s.id}')" class="bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 rounded-full px-2.5 py-0.5 text-xs font-medium transition cursor-pointer" title="Ver observaciones">${oc}</button>`:''}<button onclick="openObsModal('${s.id}')" class="text-cyan-400 hover:text-cyan-400" title="Añadir observación"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg></button><button onclick="deleteStudent('${s.id}')" class="text-red-400 hover:text-red-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></div>`; }); h+='</div></div>'; }); c.innerHTML=h; }
+    function renderStudents() { const c=document.getElementById('studentList'); const lh=document.getElementById('accListadoHint'); if (lh) lh.textContent = (data.students||[]).length ? ` · ${(data.students||[]).length} alumno(s)` : ''; const fg=document.getElementById('filterStudentGrupo')?.value||''; const sr=document.getElementById('searchStudent')?.value?.toLowerCase()||''; let f=data.students; if(fg) f=f.filter(s=>s.groupId===fg); if(sr) f=f.filter(s=>s.name.toLowerCase().includes(sr)); if(!f.length) { c.innerHTML='<p class="text-slate-400 text-center py-8">Sin alumnos</p>'; return; } const grp={}; f.forEach(s=>{if(!grp[s.groupId])grp[s.groupId]=[];grp[s.groupId].push(s);}); let h=''; Object.keys(grp).forEach(gId=>{ const g=data.groups.find(g=>g.id===gId); h+=`<div class="mb-4"><h3 class="font-bold text-slate-200 mb-2 bg-slate-800/40 px-3 py-1.5 rounded-lg border border-slate-700/40">${escHtml(g?.name||'Sin grupo')} (${grp[gId].length})</h3><div class="space-y-1">`; grp[gId].forEach(s=>{ const oc=data.observations.filter(o=>o.studentId===s.id).length; h+=`<div class="flex items-center justify-between bg-slate-800/40 rounded-xl px-4 py-2.5 border border-slate-700/30 hover:bg-slate-700/40"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-gradient-to-br from-cyan-400 to-violet-500 rounded-full flex items-center justify-center text-white text-xs font-bold">${escHtml(s.name.charAt(0).toUpperCase())}</div><span class="font-medium text-slate-200 text-sm">${escHtml(s.name)}</span></div><div class="flex items-center gap-2">${oc>0?`<button onclick="openObsModal('${s.id}')" class="bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 rounded-full px-2.5 py-0.5 text-xs font-medium transition cursor-pointer" title="Ver observaciones">${oc}</button>`:''}<button onclick="openObsModal('${s.id}')" class="text-cyan-400 hover:text-cyan-400" title="Añadir observación"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg></button><button onclick="deleteStudent('${s.id}')" class="text-red-400 hover:text-red-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></div>`; }); h+='</div></div>'; }); c.innerHTML=h; }
 
     // IMPORTAR EXCEL / CSV
     function importSeneca() {
@@ -1715,7 +1755,9 @@
     function importCsv(file, groupId) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            const lines = e.target.result.split('\n').filter(l => l.trim());
+            // Se elimina el BOM (EFBBBF) que Excel añade a los CSV UTF-8: si no,
+            // la primera celda queda "contaminada" y rompe la detección de cabecera.
+            const lines = e.target.result.replace(/^\uFEFF/, '').split('\n').filter(l => l.trim());
             let imported = 0;
             let delimiter = '\t';
             if (!lines[0].includes('\t') && lines[0].includes(';')) delimiter = ';';
@@ -1745,7 +1787,7 @@
     function cancelObsEdit() { resetObsForm(); }
     function saveObservation() { if(!currentObsStudentId) return; const t=document.getElementById('obsText').value.trim(); if(!t) { alert('Escribe algo'); return; } const type=document.getElementById('obsType').value; const date=document.getElementById('obsDate').value||new Date().toISOString().split('T')[0]; if (editingObsId) { const o=data.observations.find(x=>x.id===editingObsId); if (o) { o.text=t; o.type=type; o.date=date; } } else { data.observations.push({id:generateId(), studentId:currentObsStudentId, text:t, type:type, date:date}); } saveData(); resetObsForm(); renderObsList(); renderStudents(); }
     function deleteObservation(oid) { if(!confirm('¿Eliminar esta observación?')) return; data.observations=data.observations.filter(o=>o.id!==oid); if (editingObsId===oid) { resetObsForm(); } saveData(); renderObsList(); renderStudents(); }
-    function renderObsList() { const c=document.getElementById('obsList'); const o=data.observations.filter(o=>o.studentId===currentObsStudentId).sort((a,b)=>(b.date||'').localeCompare(a.date||'')); if(!o.length) { c.innerHTML='<p class="text-slate-400 text-center py-4 text-sm">Sin observaciones</p>'; return; } c.innerHTML=o.map(o=>{ const ic=o.type==='positive'?'✅':o.type==='negative'?'⚠️':'📝'; const bg=o.type==='positive'?'bg-emerald-500/10 border-emerald-500/20':o.type==='negative'?'bg-red-500/10 border-red-500/20':'bg-slate-800/40 border-slate-700/40'; const isEditing=editingObsId===o.id; return `<div class="${bg} ${isEditing?'ring-2 ring-cyan-500/40':''} border rounded-lg px-3 py-2 flex items-start justify-between gap-2"><div class="flex-1 min-w-0"><span class="text-sm">${ic}</span><span class="text-sm text-slate-200 ml-1">${o.text}</span><div class="text-xs text-slate-400 mt-1">${formatDate(o.date)}</div></div><div class="flex items-center gap-1 flex-shrink-0"><button onclick="editObservation('${o.id}')" class="text-slate-300 hover:text-cyan-400 p-1" title="Editar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="deleteObservation('${o.id}')" class="text-slate-300 hover:text-red-500 p-1" title="Eliminar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></div>`; }).join(''); }
+    function renderObsList() { const c=document.getElementById('obsList'); const o=data.observations.filter(o=>o.studentId===currentObsStudentId).sort((a,b)=>(b.date||'').localeCompare(a.date||'')); if(!o.length) { c.innerHTML='<p class="text-slate-400 text-center py-4 text-sm">Sin observaciones</p>'; return; } c.innerHTML=o.map(o=>{ const ic=o.type==='positive'?'✅':o.type==='negative'?'⚠️':'📝'; const bg=o.type==='positive'?'bg-emerald-500/10 border-emerald-500/20':o.type==='negative'?'bg-red-500/10 border-red-500/20':'bg-slate-800/40 border-slate-700/40'; const isEditing=editingObsId===o.id; return `<div class="${bg} ${isEditing?'ring-2 ring-cyan-500/40':''} border rounded-lg px-3 py-2 flex items-start justify-between gap-2"><div class="flex-1 min-w-0"><span class="text-sm">${ic}</span><span class="text-sm text-slate-200 ml-1">${escHtml(o.text)}</span><div class="text-xs text-slate-400 mt-1">${formatDate(o.date)}</div></div><div class="flex items-center gap-1 flex-shrink-0"><button onclick="editObservation('${o.id}')" class="text-slate-300 hover:text-cyan-400 p-1" title="Editar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="deleteObservation('${o.id}')" class="text-slate-300 hover:text-red-500 p-1" title="Eliminar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></div>`; }).join(''); }
 
     // SABERES SELECTOR
     function initSaberSelector(preserveSaberes) { selectedSaberBloque=null; selectedSaberSubbloque=null; if(!preserveSaberes) selectedSaberes=[]; renderSaberBloqueSelector(); updateSaberPreview(); }
@@ -2015,7 +2057,7 @@
         let infoHtml = `<div class="flex flex-wrap items-center gap-2">`;
         infoHtml += `<span class="bg-cyan-500/15 text-cyan-400 rounded-lg px-2.5 py-0.5 text-xs font-bold">${formatDate(dateStr)}</span>`;
         infoHtml += `<span class="bg-slate-700/50 text-slate-300 rounded-lg px-2.5 py-0.5 text-xs">${dayName} · ${hourLabel}</span>`;
-        if (group) infoHtml += `<span class="bg-violet-500/15 text-violet-400 rounded-lg px-2.5 py-0.5 text-xs font-medium">${group.name}</span>`;
+        if (group) infoHtml += `<span class="bg-violet-500/15 text-violet-400 rounded-lg px-2.5 py-0.5 text-xs font-medium">${escHtml(group.name)}</span>`;
         else infoHtml += `<span class="bg-emerald-500/10 text-emerald-400 rounded-lg px-2.5 py-0.5 text-xs">Nota libre</span>`;
         infoHtml += `</div>`;
         info.innerHTML = infoHtml;
@@ -2049,7 +2091,7 @@
         const tags = data.activityTags || [];
         let h = `<span class="act-tag act-tag-filter${!diarioActTagFilter ? ' active' : ''}" onclick="setDiarioActTagFilter(null)">Todas</span>`;
         tags.forEach(t => {
-            h += `<span class="act-tag act-tag-filter${diarioActTagFilter === t ? ' active' : ''}" ${tagStyle(t)} onclick="setDiarioActTagFilter('${t.replace(/'/g, "\\'")}')">${t}</span>`;
+            h += `<span class="act-tag act-tag-filter${diarioActTagFilter === t ? ' active' : ''}" ${tagStyle(t)} onclick="setDiarioActTagFilter('${t.replace(/\\/g,'\\\\').replace(/'/g, "\\'")}')">${escHtml(t)}</span>`;
         });
         c.innerHTML = h;
     }
@@ -2169,7 +2211,7 @@
                 const gName = o.grupo ? (data.groups.find(g => g.id === o.grupo)?.name || 'Grupo eliminado') : '';
                 const hLabel = o.hora ? HOURS[parseInt(o.hora) - 1] || o.hora : '';
                 const actName = o.actividad ? (data.activities.find(a => a.id === o.actividad)?.title || '') : '';
-                warnHtml += `<div class="orphan-entry"><div style="flex:1"><div style="font-size:0.8rem;font-weight:600;color:#e2e8f0">${formatDate(o.fecha)}${hLabel ? ' · ' + hLabel : ''}${gName ? ' · ' + gName : ''}</div>${actName ? `<div style="font-size:0.72rem;color:#94a3b8;margin-top:2px">📋 ${actName}</div>` : ''}${o.contenido ? `<div style="font-size:0.72rem;color:#64748b;margin-top:1px;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.contenido}</div>` : ''}</div><button onclick="if(confirm('¿Eliminar esta entrada?')){data.diario=data.diario.filter(d=>d.id!=='${o.id}');saveData();renderDiario();}" class="text-red-400/60 hover:text-red-400 p-1 flex-shrink-0" title="Eliminar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div>`;
+                warnHtml += `<div class="orphan-entry"><div style="flex:1"><div style="font-size:0.8rem;font-weight:600;color:#e2e8f0">${formatDate(o.fecha)}${hLabel ? ' · ' + hLabel : ''}${gName ? ' · ' + escHtml(gName) : ''}</div>${actName ? `<div style="font-size:0.72rem;color:#94a3b8;margin-top:2px">📋 ${escHtml(actName)}</div>` : ''}${o.contenido ? `<div style="font-size:0.72rem;color:#64748b;margin-top:1px;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(o.contenido)}</div>` : ''}</div><button onclick="if(confirm('¿Eliminar esta entrada?')){data.diario=data.diario.filter(d=>d.id!=='${o.id}');saveData();renderDiario();}" class="text-red-400/60 hover:text-red-400 p-1 flex-shrink-0" title="Eliminar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div>`;
             });
             warnHtml += `</div>`;
         }
@@ -2290,7 +2332,7 @@
                     html += `<td><div class="${cls}" style="${inline}" onclick="openDiarioModal('${dateStr}',${di},${hi},'${groupId}')">`;
 
                     if (group) {
-                        html += `<span class="font-semibold scell-group-name">${group.name}</span>`;
+                        html += `<span class="font-semibold scell-group-name">${escHtml(group.name)}</span>`;
                         if (entry) {
                             html += `<div class="scell-check" style="color:${gc.text}">✓</div>`;
                         }
@@ -2326,7 +2368,6 @@
         c.innerHTML = h;
     }
 
-    function getSelectedActivityTags() { return selectedActivityTags; }
     function toggleActivityTag(tag) {
         const idx = selectedActivityTags.indexOf(tag);
         if (idx === -1) selectedActivityTags.push(tag); else selectedActivityTags.splice(idx, 1);
@@ -2363,7 +2404,7 @@
         if (!t) { alert('Título requerido'); return; }
         const ch = document.querySelectorAll('#criteriaCheckboxes input:checked');
         const criteriaIds = Array.from(ch).map(c => c.value);
-        const tags = getSelectedActivityTags();
+        const tags = selectedActivityTags;
         const dateValue = document.getElementById('activityDate').value;
         // Fecha vacía → null (sin fecha). Una actividad sin fecha no puede tener
         // sesiones en el diario, así que se eliminan las entradas que la referencian.
@@ -2427,10 +2468,6 @@
         setTimeout(() => document.getElementById('activityTitle').focus(), 100);
     }
 
-    // cancelEditActivity se mantiene por compatibilidad (lo llama deleteActivity),
-    // pero ahora simplemente cierra el modal.
-    function cancelEditActivity() { closeActivityModal(); }
-
     function duplicateActivity(id) {
         const a = data.activities.find(a => a.id === id);
         if (!a) return;
@@ -2446,7 +2483,7 @@
         renderActivities();
     }
 
-    function deleteActivity(id) { if(!confirm('¿Eliminar?')) return; data.activities=data.activities.filter(a=>a.id!==id); if(editingActivityId===id) cancelEditActivity(); saveData(); renderActivities(); }
+    function deleteActivity(id) { if(!confirm('¿Eliminar?')) return; data.activities=data.activities.filter(a=>a.id!==id); if(editingActivityId===id) closeActivityModal(); saveData(); renderActivities(); }
     function openTagManager() {
         renderTagManagerList();
         document.getElementById('tagManagerModal').classList.remove('hidden');
@@ -2462,7 +2499,7 @@
             const count = (data.activities || []).filter(a => (a.tags || []).includes(t)).length;
             return `<div class="flex items-center justify-between bg-slate-800/50 rounded-xl px-4 py-2.5 border border-slate-700/40">
                 <div class="flex items-center gap-2">
-                    <span class="act-tag-on-card" ${tagStyle(t)}>${t}</span>
+                    <span class="act-tag-on-card" ${tagStyle(t)}>${escHtml(t)}</span>
                     <span class="text-xs text-slate-500">${count} actividad(es)</span>
                 </div>
                 <button onclick="deleteActivityTag(${i})" class="text-red-400 hover:text-red-300 p-1 transition" title="Eliminar etiqueta">
@@ -2530,14 +2567,14 @@
         if (!c) return;
         const tags = data.activityTags || [];
         if (!tags.length) { c.innerHTML = '<span class="text-xs text-slate-500">Sin etiquetas definidas</span>'; return; }
-        c.innerHTML = tags.map(t => `<span class="act-tag act-tag-colors${selectedActivityTags.includes(t)?' selected':''}" data-tag="${t}" ${tagStyle(t)} onclick="toggleActivityTag('${t.replace(/'/g, "\\'")}')">${t}</span>`).join('');
+        c.innerHTML = tags.map(t => `<span class="act-tag act-tag-colors${selectedActivityTags.includes(t)?' selected':''}" data-tag="${escHtml(t)}" ${tagStyle(t)} onclick="toggleActivityTag('${t.replace(/\\/g,'\\\\').replace(/'/g, "\\'")}')">${escHtml(t)}</span>`).join('');
     }
     function renderActivityFilterBar() {
         const c = document.getElementById('activityFilterBar');
         if (!c) return;
         const tags = data.activityTags || [];
         let h = `<span class="act-tag act-tag-filter${!activityFilterTag?' active':''}" onclick="setActivityFilter(null)">Todas</span>`;
-        tags.forEach(t => { h += `<span class="act-tag act-tag-filter${activityFilterTag===t?' active':''}" ${tagStyle(t)} onclick="setActivityFilter('${t.replace(/'/g, "\\'")}')">${t}</span>`; });
+        tags.forEach(t => { h += `<span class="act-tag act-tag-filter${activityFilterTag===t?' active':''}" ${tagStyle(t)} onclick="setActivityFilter('${t.replace(/\\/g,'\\\\').replace(/'/g, "\\'")}')">${escHtml(t)}</span>`; });
         h += `<span class="act-tag tag-manager-btn" onclick="openTagManager()" title="Gestionar etiquetas">+ Gestionar</span>`;
         c.innerHTML = h;
     }
@@ -2578,10 +2615,10 @@
                 ? acts.filter(a => usedActIds.has(a.id))
                 : acts.filter(a => !usedActIds.has(a.id));
         }
-        if(!acts.length) { c.innerHTML = activityFilterTag ? `<p class="text-slate-400 text-center py-8">Sin actividades con la etiqueta "${activityFilterTag}"</p>` : '<p class="text-slate-400 text-center py-8">Sin actividades</p>'; return; }
+        if(!acts.length) { c.innerHTML = activityFilterTag ? `<p class="text-slate-400 text-center py-8">Sin actividades con la etiqueta "${escHtml(activityFilterTag)}"</p>` : '<p class="text-slate-400 text-center py-8">Sin actividades</p>'; return; }
         c.innerHTML=acts.map(a=>{
             const cb=(a.criteria||[]).map(cid=>{ const cr=CRITERIA.find(c=>c.id===cid); return cr?`<span class="badge-criteria badge-worked">${cr.nombre}</span>`:''; }).join(' ');
-            const tg=(a.tags||[]).map(t=>`<span class="act-tag-on-card" ${tagStyle(t)}>${t}</span>`).join(' ');
+            const tg=(a.tags||[]).map(t=>`<span class="act-tag-on-card" ${tagStyle(t)}>${escHtml(t)}</span>`).join(' ');
             const tagsHtml = tg ? `<div class="flex flex-wrap gap-1 mb-1">${tg}</div>` : '';
             // Grupos en los que esta actividad ha sido propuesta (tiene sesión en el diario).
             // Un mismo grupo cuenta solo una vez aunque tenga varias sesiones.
@@ -2592,9 +2629,9 @@
                 const g = data.groups.find(gr=>gr.id===gid);
                 if(!g) return '';
                 const gc = getGroupColor(gid);
-                return `<span class="rounded-full px-2.5 py-0.5 text-xs font-medium" style="background:${gc.bg};border:1px solid ${gc.border};color:${gc.text}" title="Propuesta en ${g.name}">👥 ${g.name}</span>`;
+                return `<span class="rounded-full px-2.5 py-0.5 text-xs font-medium" style="background:${gc.bg};border:1px solid ${gc.border};color:${gc.text}" title="Propuesta en ${escHtml(g.name)}">👥 ${escHtml(g.name)}</span>`;
             }).join('');
-            return `<div class="glass rounded-xl border ${isEditing?'border-amber-500/30 ring-2 ring-amber-500/10':'border-slate-700/40'} p-4 card-hover hover:border-emerald-500/20"><div class="flex items-start justify-between"><div class="flex-1"><div class="flex items-center gap-2 mb-1 flex-wrap"><h3 class="font-bold text-slate-100">${a.title}</h3>${a.date?`<span class="text-xs text-slate-400">${formatDate(a.date)}</span>`:''}${le>0?`<span class="bg-cyan-500/15 text-cyan-400 rounded-full px-2.5 py-0.5 text-xs">${le} sesión(es)</span>`:''}${groupBadgesHtml}${isEditing?`<span class="bg-amber-500/15 text-amber-400 rounded-full px-2.5 py-0.5 text-xs font-medium">Editando</span>`:''}</div>${a.desc?`<p class="text-sm text-slate-400 mb-2">${a.desc}</p>`:''}${tagsHtml}<div class="flex flex-wrap gap-1 mt-2">${cb}</div></div><div class="flex items-center gap-1 ml-3"><button onclick="editActivity('${a.id}')" class="text-slate-300 hover:text-cyan-400 p-1" title="Editar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="duplicateActivity('${a.id}')" class="text-slate-300 hover:text-emerald-400 p-1" title="Duplicar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></button><button onclick="deleteActivity('${a.id}')" class="text-slate-300 hover:text-red-500 p-1" title="Eliminar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></div></div>`;
+            return `<div class="glass rounded-xl border ${isEditing?'border-amber-500/30 ring-2 ring-amber-500/10':'border-slate-700/40'} p-4 card-hover hover:border-emerald-500/20"><div class="flex items-start justify-between"><div class="flex-1"><div class="flex items-center gap-2 mb-1 flex-wrap"><h3 class="font-bold text-slate-100">${escHtml(a.title)}</h3>${a.date?`<span class="text-xs text-slate-400">${formatDate(a.date)}</span>`:''}${le>0?`<span class="bg-cyan-500/15 text-cyan-400 rounded-full px-2.5 py-0.5 text-xs">${le} sesión(es)</span>`:''}${groupBadgesHtml}${isEditing?`<span class="bg-amber-500/15 text-amber-400 rounded-full px-2.5 py-0.5 text-xs font-medium">Editando</span>`:''}</div>${a.desc?`<p class="text-sm text-slate-400 mb-2">${escHtml(a.desc)}</p>`:''}${tagsHtml}<div class="flex flex-wrap gap-1 mt-2">${cb}</div></div><div class="flex items-center gap-1 ml-3"><button onclick="editActivity('${a.id}')" class="text-slate-300 hover:text-cyan-400 p-1" title="Editar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="duplicateActivity('${a.id}')" class="text-slate-300 hover:text-emerald-400 p-1" title="Duplicar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></button><button onclick="deleteActivity('${a.id}')" class="text-slate-300 hover:text-red-500 p-1" title="Eliminar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></div></div>`;
         }).join('');
     }
 
@@ -2636,7 +2673,7 @@
         const cv = sel.value;
         const gs = data.groups || [];
         sel.innerHTML = '<option value="">Todos los grupos</option>' +
-            gs.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+            gs.map(g => `<option value="${g.id}">${escHtml(g.name)}</option>`).join('');
         // Si el grupo seleccionado dejó de existir, vuelve a "Todos".
         sel.value = (cv && gs.some(g => g.id === cv)) ? cv : '';
         setFilterVar(sel.value || null);
@@ -2968,7 +3005,7 @@
                         const sName = student ? student.name : 'Alumno eliminado';
                         const ic = o.type === 'positive' ? '✅' : o.type === 'negative' ? '⚠️' : '📝';
                         const bg = o.type === 'positive' ? 'bg-emerald-500/10 border-emerald-500/20' : o.type === 'negative' ? 'bg-red-500/10 border-red-500/20' : 'bg-slate-800/40 border-slate-700/40';
-                        return `<div class="${bg} border rounded-lg px-3 py-2 flex items-start gap-2"><span class="text-sm">${ic}</span><div class="flex-1 min-w-0"><div class="flex items-center gap-2 flex-wrap"><span class="text-sm font-medium text-slate-200">${sName}</span><span class="text-xs text-slate-400">${formatDate(o.date)}</span></div><p class="text-sm text-slate-300 mt-0.5">${o.text}</p></div></div>`;
+                        return `<div class="${bg} border rounded-lg px-3 py-2 flex items-start gap-2"><span class="text-sm">${ic}</span><div class="flex-1 min-w-0"><div class="flex items-center gap-2 flex-wrap"><span class="text-sm font-medium text-slate-200">${escHtml(sName)}</span><span class="text-xs text-slate-400">${formatDate(o.date)}</span></div><p class="text-sm text-slate-300 mt-0.5">${escHtml(o.text)}</p></div></div>`;
                     }).join('')}
                 </div>`}
                 <p class="text-xs text-slate-400 mt-2">Las observaciones se sincronizan automáticamente con Firebase y con la pestaña Alumnado.</p>
@@ -3057,7 +3094,7 @@
         container.innerHTML = sorted.map(s => {
             const g = data.groups.find(gr => gr.id === s.groupId);
             const gName = g ? g.name : 'Sin grupo';
-            return `<label class="flex items-center gap-2 cursor-pointer p-1 rounded hover:bg-slate-700/30"><input type="checkbox" class="rpt-student-chk rounded border-slate-600 text-cyan-400" value="${s.id}" data-group="${s.groupId}"> <span class="text-sm text-slate-200">${s.name}</span><span class="text-xs text-slate-500 ml-auto">${gName}</span></label>`;
+            return `<label class="flex items-center gap-2 cursor-pointer p-1 rounded hover:bg-slate-700/30"><input type="checkbox" class="rpt-student-chk rounded border-slate-600 text-cyan-400" value="${s.id}" data-group="${s.groupId}"> <span class="text-sm text-slate-200">${escHtml(s.name)}</span><span class="text-xs text-slate-500 ml-auto">${escHtml(gName)}</span></label>`;
         }).join('');
         // Por defecto, todos seleccionados
         selectAllReportStudents(true);
@@ -3128,7 +3165,7 @@ tr:nth-child(even){background:#f8fafc;}
 }
 </style></head><body>
 <h1>${title}</h1>
-<div class="meta">Curso ${courseName} · ${groupName} · Generado el ${new Date().toLocaleDateString('es-ES')} a las ${new Date().toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit'})}</div>
+<div class="meta">Curso ${escHtml(courseName)} · ${escHtml(groupName)} · Generado el ${new Date().toLocaleDateString('es-ES')} a las ${new Date().toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit'})}</div>
 ${body}
 </body></html>`;
         const w = window.open('', '_blank');
