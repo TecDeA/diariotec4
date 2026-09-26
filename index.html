@@ -532,12 +532,12 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                         <span class="header-btn-text">Cursos</span>
                     </button>
-                    <button onclick="exportAllData()" class="header-btn bg-white border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 px-3 py-2 rounded-lg text-sm flex items-center gap-1 transition text-slate-700" title="Exportar">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m0 0V8"/></svg>
+                    <button onclick="exportAllData()" class="header-btn bg-white border border-slate-200 hover:bg-emerald-50 hover:border-emerald-300 px-3 py-2 rounded-lg text-sm flex items-center gap-1 transition text-slate-700" title="Exportar datos (descargar copia)">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
                         <span class="header-btn-text">Exportar</span>
                     </button>
-                    <button onclick="document.getElementById('importFileInput').click()" class="header-btn bg-white border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 px-3 py-2 rounded-lg text-sm flex items-center gap-1 transition text-slate-700" title="Importar">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m0 0V4"/></svg>
+                    <button onclick="document.getElementById('importFileInput').click()" class="header-btn bg-white border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 px-3 py-2 rounded-lg text-sm flex items-center gap-1 transition text-slate-700" title="Importar datos (cargar copia)">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                         <span class="header-btn-text">Importar</span>
                     </button>
                     <input type="file" id="importFileInput" class="hidden" accept=".json" onchange="importAllData(event)">
@@ -649,6 +649,12 @@
         <section id="tab-alumnado" class="tab-content hidden fade-in">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-1">
+                    <div class="glass rounded-2xl p-5 mb-6">
+                        <h2 class="text-lg font-bold text-slate-100 mb-2">Nuevo grupo</h2>
+                        <p class="text-sm text-slate-400 mb-3">Crea aquí los grupos antes de añadir alumnado.</p>
+                        <form onsubmit="addGroup(event,'groupNameAlumnado')" class="mb-4"><div class="flex gap-2"><input type="text" id="groupNameAlumnado" required placeholder="Ej.: 4ºA" class="flex-1 glass-input rounded-lg px-3 py-2 text-sm"><button type="submit" class="bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:from-cyan-500 hover:to-blue-500 transition shadow-lg shadow-cyan-500/20">Añadir</button></div></form>
+                        <div id="groupListAlumnado" class="space-y-2 max-h-56 overflow-y-auto"></div>
+                    </div>
                     <div class="glass rounded-2xl p-5 mb-6">
                         <h2 class="text-lg font-bold text-slate-100 mb-4">Añadir alumno/a</h2>
                         <form onsubmit="addStudent(event)">
@@ -1030,6 +1036,7 @@
             // El payload ahora es el sobre appData (courses + courseData).
             // Conservamos el curso activo local si sigue existiendo en el remoto.
             const localCurrent = appData.currentCourseId;
+            const recovered = mergeLocalCreations(appData, remote.payload);
             appData = remote.payload;
             normalizeAppData();
             if (localCurrent && appData.courses.some(c => c.id === localCurrent) && appData.courseData[localCurrent]) {
@@ -1042,9 +1049,10 @@
             populateCourseSelector();
             updateAllGroupSelects();
             showTab(activeTab);
-            // Si el checksum no coincide, re-guardar para corregirlo
-            if (remote.checksum !== expectedChecksum) {
-                console.warn('Checksum mismatch, re-guardando datos...');
+            // Si el checksum no coincide, o se han recuperado grupos/alumnos locales
+            // que el remoto no tenía, re-guardar para propagarlos.
+            if (remote.checksum !== expectedChecksum || recovered > 0) {
+                console.warn('Checksum mismatch o datos locales recuperados, re-guardando...');
                 saveDataFirebase();
             }
         }
@@ -1053,6 +1061,33 @@
     // Guardar en Firebase con todas las capas de protección
     // Se usa un debounce de 600ms para agrupar cambios rápidos y no saturar Firebase
     let firebaseDebounceTimer = null;
+
+    // Fusiona creaciones locales (grupos y alumnado) que aún no existen en el payload
+    // remoto, curso por curso. Evita que una escritura "a pantalla completa" desde un
+    // dispositivo desactualizado borre grupos/alumnos añadidos recientemente.
+    // Devuelve el número de elementos recuperados (0 si no hubo que fusionar nada).
+    function mergeLocalCreations(localApp, remoteApp) {
+        let recovered = 0;
+        const localSlices = (localApp && localApp.courseData) || {};
+        remoteApp.courseData = remoteApp.courseData || {};
+        const ids = new Set([...Object.keys(localSlices), ...Object.keys(remoteApp.courseData)]);
+        ids.forEach(cid => {
+            const loc = localSlices[cid];
+            const rem = remoteApp.courseData[cid] || createEmptyCourseData();
+            remoteApp.courseData[cid] = rem;
+            if (!loc) return;
+            ['groups', 'students'].forEach(key => {
+                const rr = Array.isArray(rem[key]) ? rem[key] : [];
+                const ll = Array.isArray(loc[key]) ? loc[key] : [];
+                ll.forEach(item => {
+                    if (item && item.id && !rr.some(x => x.id === item.id)) { rr.push(item); recovered++; }
+                });
+                rem[key] = rr;
+            });
+        });
+        return recovered;
+    }
+
     function saveDataFirebase() {
         if (!firebaseReady) return Promise.resolve(false);
 
@@ -1110,6 +1145,7 @@
             localVersion = remoteVersion;
             // El payload puede ser el nuevo sobre (courses + courseData) o el formato antiguo (data plano).
             const p = remote.payload;
+            const previousLocal = appData;
             if (p && Array.isArray(p.courses) && p.courseData) {
                 // Conservar el curso activo local si sigue existiendo remotamente
                 const localCurrent = appData.currentCourseId;
@@ -1125,6 +1161,13 @@
                 normalizeAppData();
             }
             normalizeData();
+            // Recuperar grupos/alumnos creados localmente que el remoto aún no tiene
+            // (p. ej. escrituras fallidas por falta de conexión): se fusionan y se suben.
+            const recovered = mergeLocalCreations(previousLocal, appData);
+            if (recovered > 0) {
+                console.log('Recuperados ' + recovered + ' elementos locales al sincronizar.');
+                saveDataFirebase();
+            }
             return true;
         }).catch((err) => {
             console.error('Error cargando desde Firebase:', err);
@@ -1475,7 +1518,7 @@
         // Scroll al inicio de la página al cambiar de pantalla
         window.scrollTo({ top: 0, behavior: 'smooth' });
         if(t==='diario') { renderDiario(); }
-        if(t==='alumnado') renderStudents();
+        if(t==='alumnado') { renderGroups(); renderStudents(); }
         if(t==='horario') { renderGroups(); renderSchedule(); }
         if(t==='actividades') { populateActivitiesGroupFilter(); renderActivities(); }
         if(t==='saberes') { populateSaberesGroupFilter(); renderSaberesDashboard(); }
@@ -1498,9 +1541,9 @@
     });
 
     // GRUPOS
-    function addGroup(e) { e.preventDefault(); const n = document.getElementById('groupName').value.trim(); if(!n || data.groups.find(g=>g.name.toLowerCase()===n.toLowerCase())) { alert('Grupo existente o vacío'); return; } data.groups.push({id:generateId(), name:n}); saveData(); document.getElementById('groupName').value=''; renderGroups(); updateAllGroupSelects(); }
+    function addGroup(e, inputId) { e.preventDefault(); const inp = document.getElementById(inputId || 'groupName'); const n = (inp ? inp.value : '').trim(); if(!n || data.groups.find(g=>g.name.toLowerCase()===n.toLowerCase())) { alert('Grupo existente o vacío'); return; } data.groups.push({id:generateId(), name:n}); saveData(); inp.value=''; renderGroups(); updateAllGroupSelects(); }
     function deleteGroup(id) { if(!confirm('¿Eliminar grupo?')) return; data.groups=data.groups.filter(g=>g.id!==id); data.students=data.students.filter(s=>s.groupId!==id); saveData(); renderGroups(); updateAllGroupSelects(); }
-    function renderGroups() { const c=document.getElementById('groupList'); const gs=data.groups||[]; const st=data.students||[]; if(!gs.length) { c.innerHTML='<p class="text-slate-400 text-center py-4">Sin grupos</p>'; return; } c.innerHTML=gs.map(g=>{ const cnt=st.filter(s=>s.groupId===g.id).length; return `<div class="flex items-center justify-between bg-slate-800/50 rounded-xl px-4 py-3 border border-slate-700/40"><div class="flex items-center gap-3"><div class="bg-cyan-500/15 text-cyan-400 rounded-lg px-3 py-1 font-bold text-sm">${g.name}</div><span class="text-slate-400 text-sm">${cnt} alumno(s)</span></div><button onclick="deleteGroup('${g.id}')" class="text-red-400 hover:text-red-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div>`; }).join(''); }
+    function renderGroups() { const gs=data.groups||[]; const st=data.students||[]; let h; if(!gs.length) { h='<p class="text-slate-400 text-center py-4">Sin grupos</p>'; } else { h=gs.map(g=>{ const cnt=st.filter(s=>s.groupId===g.id).length; return `<div class="flex items-center justify-between bg-slate-800/50 rounded-xl px-4 py-3 border border-slate-700/40"><div class="flex items-center gap-3"><div class="bg-cyan-500/15 text-cyan-400 rounded-lg px-3 py-1 font-bold text-sm">${g.name}</div><span class="text-slate-400 text-sm">${cnt} alumno(s)</span></div><button onclick="deleteGroup('${g.id}')" class="text-red-400 hover:text-red-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div>`; }).join(''); } ['groupList','groupListAlumnado'].forEach(id => { const c=document.getElementById(id); if (c) c.innerHTML=h; }); }
     function updateAllGroupSelects() { const gs=data.groups||[]; ['studentGrupo','senecaGrupo','filterStudentGrupo','scheduleGrupoSelect'].forEach(id => { const el=document.getElementById(id); if(!el) return; const cv=el.value; const isF=id.includes('Filter'); el.innerHTML=`<option value="">${isF?'Todos':'Selecciona'}</option>`; gs.forEach(g => el.innerHTML+=`<option value="${g.id}">${g.name}</option>`); el.value=cv; }); }
 
     // HORARIO
