@@ -67,6 +67,22 @@
             box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07);
             border-color: #cbd5e1;
         }
+        /* ============================================================
+           ACORDEONES — tarjetas plegables; solo una abierta a la vez
+           ============================================================ */
+        .accordion { padding: 0 !important; overflow: hidden; }
+        .acc-header {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            width: 100%; padding: 1.1rem 1.25rem; background: transparent; border: none;
+            cursor: pointer; text-align: left; transition: background 0.15s;
+        }
+        .acc-header:hover { background: #f9fafb; }
+        .acc-header h2 { margin: 0; }
+        .acc-hint { font-size: 0.75rem; color: #94a3b8; font-weight: 400; margin-left: 6px; }
+        .acc-chevron { flex-shrink: 0; width: 1.25rem; height: 1.25rem; color: #94a3b8; transition: transform 0.2s; }
+        .accordion.open .acc-chevron { transform: rotate(180deg); }
+        .acc-body { display: none; padding: 0.25rem 1.25rem 1.25rem; }
+        .accordion.open .acc-body { display: block; }
         /* Items clicables en Informes (generan reporte al pulsar) */
         .report-item { cursor: pointer; transition: all 0.15s; position: relative; }
         .report-item:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1); }
@@ -507,6 +523,8 @@
             .inicio-btn-sub { font-size: 0.65rem; }
             .home-fab { width: 48px; height: 48px; bottom: 1rem; right: 1rem; }
             .home-fab svg { width: 1.5rem; height: 1.5rem; }
+            /* Último botón (Informes): ocupa el ancho completo de la pantalla */
+            .ib-informes { grid-column: 1 / -1; }
         }
     </style>
 </head>
@@ -649,35 +667,56 @@
         <section id="tab-alumnado" class="tab-content hidden fade-in">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-1">
-                    <div class="glass rounded-2xl p-5 mb-6">
-                        <h2 class="text-lg font-bold text-slate-100 mb-2">Nuevo grupo</h2>
-                        <p class="text-sm text-slate-400 mb-3">Crea aquí los grupos antes de añadir alumnado.</p>
-                        <form onsubmit="addGroup(event,'groupNameAlumnado')" class="mb-4"><div class="flex gap-2"><input type="text" id="groupNameAlumnado" required placeholder="Ej.: 4ºA" class="flex-1 glass-input rounded-lg px-3 py-2 text-sm"><button type="submit" class="bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:from-cyan-500 hover:to-blue-500 transition shadow-lg shadow-cyan-500/20">Añadir</button></div></form>
-                        <div id="groupListAlumnado" class="space-y-2 max-h-56 overflow-y-auto"></div>
-                    </div>
-                    <div class="glass rounded-2xl p-5 mb-6">
-                        <h2 class="text-lg font-bold text-slate-100 mb-4">Añadir alumno/a</h2>
-                        <form onsubmit="addStudent(event)">
-                            <div class="mb-3"><label class="block text-sm font-medium text-slate-300 mb-1">Nombre completo</label><input type="text" id="studentName" required placeholder="Apellido, Nombre" class="w-full glass-input rounded-lg px-3 py-2 text-sm"></div>
-                            <div class="mb-3"><label class="block text-sm font-medium text-slate-300 mb-1">Grupo</label><select id="studentGrupo" required class="w-full glass-input rounded-lg px-3 py-2 text-sm"><option value="">Selecciona grupo</option></select></div>
-                            <button type="submit" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-2 rounded-xl font-medium hover:from-cyan-500 hover:to-blue-500 transition shadow-lg shadow-cyan-500/20">Añadir alumno/a</button>
-                        </form>
-                    </div>
-                    <div class="glass rounded-2xl p-5">
-                        <h2 class="text-lg font-bold text-slate-100 mb-2">Importar desde Excel/CSV</h2>
-                        <p class="text-sm text-slate-400 mb-3">Importa la lista desde Séneca (Excel/CSV).</p>
-                        <div class="mb-3"><label class="block text-sm font-medium text-slate-300 mb-1">Grupo destino</label><select id="senecaGrupo" required class="w-full glass-input rounded-lg px-3 py-2 text-sm"><option value="">Selecciona grupo</option></select></div>
-                        <div class="mb-3">
-                            <label class="block text-sm font-medium text-slate-300 mb-1">Archivo Excel o CSV</label>
-                            <input type="file" id="senecaFile" accept=".xlsx,.xls,.csv,.tsv" class="w-full text-sm glass-input rounded-lg px-3 py-2 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:bg-cyan-500/10 file:text-cyan-400 file:font-medium file:cursor-pointer hover:file:bg-cyan-500/20 file:border-cyan-500/30">
+                    <div class="glass rounded-2xl accordion mb-4" id="acc-grupos">
+                        <button type="button" class="acc-header" onclick="toggleAccordion('acc-grupos')">
+                            <h2 class="text-lg font-bold text-slate-100">Gestión de grupos<span class="acc-hint" id="accGruposHint"></span></h2>
+                            <svg class="acc-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div class="acc-body">
+                            <p class="text-sm text-slate-400 mb-3">Crea, renombra o elimina grupos antes de añadir alumnado.</p>
+                            <form onsubmit="addGroup(event)" class="mb-4"><div class="flex gap-2"><input type="text" id="groupName" required placeholder="Ej.: 4ºA" class="flex-1 glass-input rounded-lg px-3 py-2 text-sm"><button type="submit" class="bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:from-cyan-500 hover:to-blue-500 transition shadow-lg shadow-cyan-500/20">Añadir</button></div></form>
+                            <div id="groupList" class="space-y-2 max-h-72 overflow-y-auto"></div>
                         </div>
-                        <button onclick="importSeneca()" class="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white py-2 rounded-xl font-medium hover:from-violet-500 hover:to-purple-500 transition shadow-lg shadow-violet-500/20">Importar alumnado</button>
+                    </div>
+                    <div class="glass rounded-2xl accordion mb-4" id="acc-anadir-alumno">
+                        <button type="button" class="acc-header" onclick="toggleAccordion('acc-anadir-alumno')">
+                            <h2 class="text-lg font-bold text-slate-100">Añadir alumno/a</h2>
+                            <svg class="acc-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div class="acc-body">
+                            <form onsubmit="addStudent(event)">
+                                <div class="mb-3"><label class="block text-sm font-medium text-slate-300 mb-1">Nombre completo</label><input type="text" id="studentName" required placeholder="Apellido, Nombre" class="w-full glass-input rounded-lg px-3 py-2 text-sm"></div>
+                                <div class="mb-3"><label class="block text-sm font-medium text-slate-300 mb-1">Grupo</label><select id="studentGrupo" required class="w-full glass-input rounded-lg px-3 py-2 text-sm"><option value="">Selecciona grupo</option></select></div>
+                                <button type="submit" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-2 rounded-xl font-medium hover:from-cyan-500 hover:to-blue-500 transition shadow-lg shadow-cyan-500/20">Añadir alumno/a</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="glass rounded-2xl accordion" id="acc-importar-seneca">
+                        <button type="button" class="acc-header" onclick="toggleAccordion('acc-importar-seneca')">
+                            <h2 class="text-lg font-bold text-slate-100">Importar desde Excel/CSV</h2>
+                            <svg class="acc-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div class="acc-body">
+                            <p class="text-sm text-slate-400 mb-3">Importa la lista desde Séneca (Excel/CSV).</p>
+                            <div class="mb-3"><label class="block text-sm font-medium text-slate-300 mb-1">Grupo destino</label><select id="senecaGrupo" required class="w-full glass-input rounded-lg px-3 py-2 text-sm"><option value="">Selecciona grupo</option></select></div>
+                            <div class="mb-3">
+                                <label class="block text-sm font-medium text-slate-300 mb-1">Archivo Excel o CSV</label>
+                                <input type="file" id="senecaFile" accept=".xlsx,.xls,.csv,.tsv" class="w-full text-sm glass-input rounded-lg px-3 py-2 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:bg-cyan-500/10 file:text-cyan-400 file:font-medium file:cursor-pointer hover:file:bg-cyan-500/20 file:border-cyan-500/30">
+                            </div>
+                            <button onclick="importSeneca()" class="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white py-2 rounded-xl font-medium hover:from-violet-500 hover:to-purple-500 transition shadow-lg shadow-violet-500/20">Importar alumnado</button>
+                        </div>
                     </div>
                 </div>
                 <div class="lg:col-span-2">
-                    <div class="glass rounded-2xl p-5">
-                        <div class="flex items-center justify-between mb-4 flex-wrap gap-2"><h2 class="text-lg font-bold text-slate-100">Listado de alumnado</h2><div class="flex gap-2 flex-wrap"><select id="filterStudentGrupo" onchange="renderStudents()" class="glass-input rounded-lg px-2 py-2 text-sm"><option value="">Todos</option></select><input type="text" id="searchStudent" oninput="renderStudents()" placeholder="Buscar..." class="glass-input rounded-lg px-3 py-2 text-sm w-40"></div></div>
-                        <div id="studentList" class="max-h-[600px] overflow-y-auto"></div>
+                    <div class="glass rounded-2xl accordion" id="acc-listado-alumnado">
+                        <button type="button" class="acc-header" onclick="toggleAccordion('acc-listado-alumnado')">
+                            <h2 class="text-lg font-bold text-slate-100">Listado de alumnado<span class="acc-hint" id="accListadoHint"></span></h2>
+                            <svg class="acc-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div class="acc-body">
+                            <div class="flex items-center justify-between mb-4 flex-wrap gap-2"><div class="flex gap-2 flex-wrap"><select id="filterStudentGrupo" onchange="renderStudents()" class="glass-input rounded-lg px-2 py-2 text-sm"><option value="">Todos</option></select><input type="text" id="searchStudent" oninput="renderStudents()" placeholder="Buscar..." class="glass-input rounded-lg px-3 py-2 text-sm w-40"></div></div>
+                            <div id="studentList" class="max-h-[600px] overflow-y-auto"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -685,14 +724,12 @@
 
         <!-- HORARIO TAB -->
         <section id="tab-horario" class="tab-content hidden fade-in">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="glass rounded-2xl p-5">
-                    <h2 class="text-lg font-bold text-slate-100 mb-4">Gestión de grupos</h2>
-                    <form onsubmit="addGroup(event)" class="mb-4"><div class="flex gap-2"><input type="text" id="groupName" required placeholder="Nombre del grupo" class="flex-1 glass-input rounded-lg px-3 py-2 text-sm"><button type="submit" class="bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:from-cyan-500 hover:to-blue-500 transition shadow-lg shadow-cyan-500/20">Añadir</button></div></form>
-                    <div id="groupList" class="space-y-2"></div>
-                </div>
-                <div class="glass rounded-2xl p-5">
-                    <h2 class="text-lg font-bold text-slate-100 mb-4">Horario del profesor</h2>
+            <div class="glass rounded-2xl accordion max-w-4xl mx-auto" id="acc-horario">
+                <button type="button" class="acc-header" onclick="toggleAccordion('acc-horario')">
+                    <h2 class="text-lg font-bold text-slate-100">Horario del profesor</h2>
+                    <svg class="acc-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div class="acc-body">
                     <div class="overflow-x-auto"><table class="w-full text-sm" id="scheduleTable"><thead><tr class="border-b-2 border-slate-600/40"><th class="p-2 text-left font-semibold text-slate-300">Hora</th><th class="p-2 text-center font-semibold text-slate-300">Lunes</th><th class="p-2 text-center font-semibold text-slate-300">Martes</th><th class="p-2 text-center font-semibold text-slate-300">Miércoles</th><th class="p-2 text-center font-semibold text-slate-300">Jueves</th><th class="p-2 text-center font-semibold text-slate-300">Viernes</th></tr></thead><tbody id="scheduleBody"></tbody></table></div>
                 </div>
             </div>
@@ -700,7 +737,12 @@
 
         <!-- ACTIVIDADES TAB -->
         <section id="tab-actividades" class="tab-content hidden fade-in">
-            <div class="glass rounded-2xl p-5">
+            <div class="glass rounded-2xl accordion" id="acc-actividades">
+                <button type="button" class="acc-header" onclick="toggleAccordion('acc-actividades')">
+                    <h2 class="text-lg font-bold text-slate-100">Actividades<span class="acc-hint" id="activitiesGroupLabel"></span></h2>
+                    <svg class="acc-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div class="acc-body">
                 <div class="grid gap-1 mb-4 actividades-top-grid">
                     <div class="ctag-wrap">
                         <div class="ctag ctag-act-all active" id="tagActAll" onclick="setActProposalAll()">📚 Todas <span class="ctag-count" id="tagActAllCount">0</span></div>
@@ -715,8 +757,7 @@
                         <div class="ctag ctag-act-new justify-center" onclick="openActivityModal()" title="Crear nueva actividad">➕ Nueva</div>
                     </div>
                 </div>
-                <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-                    <h2 class="text-lg font-bold text-slate-100">Actividades <span id="activitiesGroupLabel" class="text-slate-400 font-normal text-sm"></span></h2>
+                <div class="flex items-center justify-end mb-4 flex-wrap gap-3">
                     <div class="flex items-center gap-2">
                         <label class="text-xs text-slate-500 font-medium">Grupo:</label>
                         <select id="activitiesGroupFilter" onchange="onActivitiesGroupChange()" class="glass-input rounded-lg px-3 py-1.5 text-sm min-w-[160px]">
@@ -726,70 +767,82 @@
                 </div>
                 <div class="flex items-center gap-1.5 mb-3 flex-wrap" id="activityFilterBar"></div>
                 <div id="activityList" class="space-y-3 max-h-[600px] overflow-y-auto"></div>
+                </div>
             </div>
         </section>
 
         <!-- SABERES BÁSICOS TAB -->
         <section id="tab-saberes" class="tab-content hidden fade-in">
-            <div class="glass rounded-2xl p-5 mb-6">
-                <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-                    <h2 class="text-lg font-bold text-slate-100">Saberes Básicos trabajados <span id="saberesGroupLabel" class="text-slate-400 font-normal text-sm"></span></h2>
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs text-slate-500 font-medium">Grupo:</label>
-                        <select id="saberesGroupFilter" onchange="onSaberesGroupChange()" class="glass-input rounded-lg px-3 py-1.5 text-sm min-w-[160px]">
-                            <option value="">Todos los grupos</option>
-                        </select>
+            <div class="glass rounded-2xl accordion mb-6" id="acc-saberes">
+                <button type="button" class="acc-header" onclick="toggleAccordion('acc-saberes')">
+                    <h2 class="text-lg font-bold text-slate-100">Saberes Básicos trabajados<span class="acc-hint" id="saberesGroupLabel"></span></h2>
+                    <svg class="acc-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div class="acc-body">
+                    <div class="flex items-center justify-end mb-4 flex-wrap gap-3">
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-500 font-medium">Grupo:</label>
+                            <select id="saberesGroupFilter" onchange="onSaberesGroupChange()" class="glass-input rounded-lg px-3 py-1.5 text-sm min-w-[160px]">
+                                <option value="">Todos los grupos</option>
+                            </select>
+                        </div>
                     </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="saberesSummary"></div>
+                    <div class="mb-4"><div class="flex justify-between text-sm mb-1"><span class="font-medium text-slate-300">Progreso general</span><span id="saberesOverallProgress" class="font-bold text-cyan-400">0%</span></div><div class="w-full bg-slate-700/50 rounded-full h-3 progress-glow"><div id="saberesOverallProgressBar" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-3 rounded-full progress-bar" style="width:0%"></div></div></div>
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="saberesSummary"></div>
-                <div class="mb-4"><div class="flex justify-between text-sm mb-1"><span class="font-medium text-slate-300">Progreso general</span><span id="saberesOverallProgress" class="font-bold text-cyan-400">0%</span></div><div class="w-full bg-slate-700/50 rounded-full h-3 progress-glow"><div id="saberesOverallProgressBar" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-3 rounded-full progress-bar" style="width:0%"></div></div></div>
             </div>
             <div id="saberesBlocks" class="space-y-4"></div>
         </section>
 
         <!-- CRITERIOS TAB -->
         <section id="tab-criterios" class="tab-content hidden fade-in">
-            <div class="glass rounded-2xl p-5 mb-6">
-                <div class="flex items-center justify-between mb-1 flex-wrap gap-3">
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-100">Criterios de evaluación <span id="criteriaGroupLabel" class="text-slate-400 font-normal text-sm"></span></h2>
-                        <p class="text-sm text-slate-400">Pulsa sobre cada etiqueta para ver el detalle.</p>
+            <div class="glass rounded-2xl accordion mb-6" id="acc-criterios">
+                <button type="button" class="acc-header" onclick="toggleAccordion('acc-criterios')">
+                    <h2 class="text-lg font-bold text-slate-100">Criterios de evaluación<span class="acc-hint" id="criteriaGroupLabel"></span></h2>
+                    <svg class="acc-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div class="acc-body">
+                    <p class="text-sm text-slate-400">Pulsa sobre cada etiqueta para ver el detalle.</p>
+                    <div class="flex items-center justify-end mb-1 flex-wrap gap-3">
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-500 font-medium">Grupo:</label>
+                            <select id="criteriaGroupFilter" onchange="onCriteriaGroupChange()" class="glass-input rounded-lg px-3 py-1.5 text-sm min-w-[160px]">
+                                <option value="">Todos los grupos</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs text-slate-500 font-medium">Grupo:</label>
-                        <select id="criteriaGroupFilter" onchange="onCriteriaGroupChange()" class="glass-input rounded-lg px-3 py-1.5 text-sm min-w-[160px]">
-                            <option value="">Todos los grupos</option>
-                        </select>
+                    <div class="flex items-stretch gap-1 mt-4">
+                        <div class="ctag-wrap flex-1">
+                            <div class="ctag ctag-used justify-center" id="tagUsed" onclick="toggleCriteriaFilter('used')">✅ Usados <span class="ctag-count" id="tagUsedCount">0</span></div>
+                        </div>
+                        <div class="ctag-wrap flex-1">
+                            <div class="ctag ctag-proposed justify-center" id="tagProposed" onclick="toggleCriteriaFilter('proposed')">📋 Propuestos <span class="ctag-count" id="tagProposedCount">0</span></div>
+                        </div>
+                        <div class="ctag-wrap flex-1">
+                            <div class="ctag ctag-notprop justify-center" id="tagNotProp" onclick="toggleCriteriaFilter('notprop')">⬜ Sin proponer <span class="ctag-count" id="tagNotPropCount">0</span></div>
+                        </div>
                     </div>
+                    <div id="criteriaFilteredList" class="ctag-filtered-list"></div>
                 </div>
-                <div class="flex items-stretch gap-1 mt-4">
-                    <div class="ctag-wrap flex-1">
-                        <div class="ctag ctag-used justify-center" id="tagUsed" onclick="toggleCriteriaFilter('used')">✅ Usados <span class="ctag-count" id="tagUsedCount">0</span></div>
-                    </div>
-                    <div class="ctag-wrap flex-1">
-                        <div class="ctag ctag-proposed justify-center" id="tagProposed" onclick="toggleCriteriaFilter('proposed')">📋 Propuestos <span class="ctag-count" id="tagProposedCount">0</span></div>
-                    </div>
-                    <div class="ctag-wrap flex-1">
-                        <div class="ctag ctag-notprop justify-center" id="tagNotProp" onclick="toggleCriteriaFilter('notprop')">⬜ Sin proponer <span class="ctag-count" id="tagNotPropCount">0</span></div>
-                    </div>
-                </div>
-                <div id="criteriaFilteredList" class="ctag-filtered-list"></div>
             </div>
         </section>
 
         <!-- INFORMES TAB -->
         <section id="tab-informes" class="tab-content hidden fade-in">
-            <div class="glass rounded-2xl p-5 mb-6">
-                <div class="flex items-center justify-between mb-1 flex-wrap gap-3">
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-100">Informes <span id="informesGroupLabel" class="text-slate-400 font-normal text-sm"></span></h2>
-                        <p class="text-sm text-slate-400">Resumen global del curso activo. Filtra por grupo para acotar las cifras.</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs text-slate-500 font-medium">Grupo:</label>
-                        <select id="informesGroupFilter" onchange="onInformesGroupChange()" class="glass-input rounded-lg px-3 py-1.5 text-sm min-w-[160px]">
-                            <option value="">Todos los grupos</option>
-                        </select>
+            <div class="glass rounded-2xl accordion mb-6" id="acc-informes">
+                <button type="button" class="acc-header" onclick="toggleAccordion('acc-informes')">
+                    <h2 class="text-lg font-bold text-slate-100">Informes<span class="acc-hint" id="informesGroupLabel"></span></h2>
+                    <svg class="acc-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div class="acc-body">
+                    <p class="text-sm text-slate-400">Resumen global del curso activo. Filtra por grupo para acotar las cifras.</p>
+                    <div class="flex items-center justify-end mt-2 flex-wrap gap-3">
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-500 font-medium">Grupo:</label>
+                            <select id="informesGroupFilter" onchange="onInformesGroupChange()" class="glass-input rounded-lg px-3 py-1.5 text-sm min-w-[160px]">
+                                <option value="">Todos los grupos</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1519,7 +1572,7 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
         if(t==='diario') { renderDiario(); }
         if(t==='alumnado') { renderGroups(); renderStudents(); }
-        if(t==='horario') { renderGroups(); renderSchedule(); }
+        if(t==='horario') { renderSchedule(); }
         if(t==='actividades') { populateActivitiesGroupFilter(); renderActivities(); }
         if(t==='saberes') { populateSaberesGroupFilter(); renderSaberesDashboard(); }
         if(t==='criterios') { populateCriteriaGroupFilter(); renderCriteriaDashboard(); }
@@ -1527,6 +1580,16 @@
     }
     // Volver a la pantalla de inicio (modo móvil/tablet)
     function goHome() { showTab('inicio'); }
+
+    // Acordeones: como máximo una tarjeta abierta en todo momento.
+    // Volver a pulsar la cabecera de la tarjeta abierta la repliega.
+    function toggleAccordion(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const wasOpen = el.classList.contains('open');
+        document.querySelectorAll('.accordion.open').forEach(a => a.classList.remove('open'));
+        if (!wasOpen) el.classList.add('open');
+    }
 
     // Al cambiar el tamaño de ventana y cruzar el breakpoint 1024px, cambiar de modo
     let _wasMobile = isMobileMode();
@@ -1542,8 +1605,44 @@
 
     // GRUPOS
     function addGroup(e, inputId) { e.preventDefault(); const inp = document.getElementById(inputId || 'groupName'); const n = (inp ? inp.value : '').trim(); if(!n || data.groups.find(g=>g.name.toLowerCase()===n.toLowerCase())) { alert('Grupo existente o vacío'); return; } data.groups.push({id:generateId(), name:n}); saveData(); inp.value=''; renderGroups(); updateAllGroupSelects(); }
-    function deleteGroup(id) { if(!confirm('¿Eliminar grupo?')) return; data.groups=data.groups.filter(g=>g.id!==id); data.students=data.students.filter(s=>s.groupId!==id); saveData(); renderGroups(); updateAllGroupSelects(); }
-    function renderGroups() { const gs=data.groups||[]; const st=data.students||[]; let h; if(!gs.length) { h='<p class="text-slate-400 text-center py-4">Sin grupos</p>'; } else { h=gs.map(g=>{ const cnt=st.filter(s=>s.groupId===g.id).length; return `<div class="flex items-center justify-between bg-slate-800/50 rounded-xl px-4 py-3 border border-slate-700/40"><div class="flex items-center gap-3"><div class="bg-cyan-500/15 text-cyan-400 rounded-lg px-3 py-1 font-bold text-sm">${g.name}</div><span class="text-slate-400 text-sm">${cnt} alumno(s)</span></div><button onclick="deleteGroup('${g.id}')" class="text-red-400 hover:text-red-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div>`; }).join(''); } ['groupList','groupListAlumnado'].forEach(id => { const c=document.getElementById(id); if (c) c.innerHTML=h; }); }
+    function deleteGroup(id) { if(!confirm('¿Eliminar grupo? Se borrarán también sus alumnos.')) return; data.groups=data.groups.filter(g=>g.id!==id); data.students=data.students.filter(s=>s.groupId!==id); saveData(); if(editingGroupId===id) editingGroupId=null; renderGroups(); updateAllGroupSelects(); renderStudents(); }
+    let editingGroupId = null;
+    function startGroupEdit(id) { editingGroupId = id; renderGroups(); const inp = document.getElementById('groupRenameInput'); if (inp) { inp.focus(); inp.select(); } }
+    function cancelGroupEdit() { editingGroupId = null; renderGroups(); }
+    function saveGroupName(id) {
+        const inp = document.getElementById('groupRenameInput');
+        const n = inp ? inp.value.trim() : '';
+        if (!n) { alert('El nombre del grupo no puede quedar vacío.'); return; }
+        if (data.groups.find(g => g.id !== id && g.name.toLowerCase() === n.toLowerCase())) { alert('Ya existe un grupo con ese nombre.'); return; }
+        const g = data.groups.find(x => x.id === id);
+        if (!g) return;
+        g.name = n;
+        editingGroupId = null;
+        saveData();
+        renderGroups();
+        renderSchedule();
+        updateAllGroupSelects();
+        renderStudents();
+    }
+    function renderGroups() {
+        const gs=data.groups||[]; const st=data.students||[];
+        let h;
+        if(!gs.length) {
+            h='<p class="text-slate-400 text-center py-4">Sin grupos. Añade el primero arriba.</p>';
+        } else {
+            h=gs.map(g=>{
+                const cnt=st.filter(s=>s.groupId===g.id).length;
+                if (editingGroupId===g.id) {
+                    return `<div class="bg-slate-800/50 rounded-xl px-4 py-3 border border-indigo-300/50"><div class="flex items-center gap-2"><input type="text" id="groupRenameInput" value="${g.name.replace(/"/g,'&quot;')}" class="flex-1 glass-input rounded-lg px-3 py-2 text-sm" onkeydown="if(event.key==='Enter'){event.preventDefault();saveGroupName('${g.id}');}else if(event.key==='Escape'){cancelGroupEdit();}"><button onclick="saveGroupName('${g.id}')" title="Guardar nombre" class="text-emerald-500 hover:text-emerald-400 p-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button><button onclick="cancelGroupEdit()" title="Cancelar" class="text-slate-400 hover:text-slate-600 p-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div></div>`;
+                }
+                return `<div class="flex items-center justify-between bg-slate-800/50 rounded-xl px-4 py-3 border border-slate-700/40"><div class="flex items-center gap-3 min-w-0"><div class="bg-cyan-500/15 text-cyan-400 rounded-lg px-3 py-1 font-bold text-sm">${g.name}</div><span class="text-slate-400 text-sm whitespace-nowrap">${cnt} alumno(s)</span></div><div class="flex items-center gap-1"><button onclick="startGroupEdit('${g.id}')" title="Renombrar grupo" class="text-slate-400 hover:text-indigo-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="deleteGroup('${g.id}')" title="Eliminar grupo" class="text-red-400 hover:text-red-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></div>`;
+            }).join('');
+        }
+        const c = document.getElementById('groupList');
+        if (c) c.innerHTML = h;
+        const gh = document.getElementById('accGruposHint');
+        if (gh) gh.textContent = gs.length ? ` · ${gs.length} grupo(s)` : '';
+    }
     function updateAllGroupSelects() { const gs=data.groups||[]; ['studentGrupo','senecaGrupo','filterStudentGrupo','scheduleGrupoSelect'].forEach(id => { const el=document.getElementById(id); if(!el) return; const cv=el.value; const isF=id.includes('Filter'); el.innerHTML=`<option value="">${isF?'Todos':'Selecciona'}</option>`; gs.forEach(g => el.innerHTML+=`<option value="${g.id}">${g.name}</option>`); el.value=cv; }); }
 
     // HORARIO
@@ -1556,7 +1655,7 @@
     // ALUMNADO
     function addStudent(e) { e.preventDefault(); const n=document.getElementById('studentName').value.trim(); const g=document.getElementById('studentGrupo').value; if(!n||!g) return; data.students.push({id:generateId(), name:n, groupId:g}); saveData(); document.getElementById('studentName').value=''; renderStudents(); renderGroups(); }
     function deleteStudent(id) { if(!confirm('¿Eliminar alumno?')) return; data.students=data.students.filter(s=>s.id!==id); data.observations=data.observations.filter(o=>o.studentId!==id); saveData(); renderStudents(); renderGroups(); }
-    function renderStudents() { const c=document.getElementById('studentList'); const fg=document.getElementById('filterStudentGrupo')?.value||''; const sr=document.getElementById('searchStudent')?.value?.toLowerCase()||''; let f=data.students; if(fg) f=f.filter(s=>s.groupId===fg); if(sr) f=f.filter(s=>s.name.toLowerCase().includes(sr)); if(!f.length) { c.innerHTML='<p class="text-slate-400 text-center py-8">Sin alumnos</p>'; return; } const grp={}; f.forEach(s=>{if(!grp[s.groupId])grp[s.groupId]=[];grp[s.groupId].push(s);}); let h=''; Object.keys(grp).forEach(gId=>{ const g=data.groups.find(g=>g.id===gId); h+=`<div class="mb-4"><h3 class="font-bold text-slate-200 mb-2 bg-slate-800/40 px-3 py-1.5 rounded-lg border border-slate-700/40">${g?.name||'Sin grupo'} (${grp[gId].length})</h3><div class="space-y-1">`; grp[gId].forEach(s=>{ const oc=data.observations.filter(o=>o.studentId===s.id).length; h+=`<div class="flex items-center justify-between bg-slate-800/40 rounded-xl px-4 py-2.5 border border-slate-700/30 hover:bg-slate-700/40"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-gradient-to-br from-cyan-400 to-violet-500 rounded-full flex items-center justify-center text-white text-xs font-bold">${s.name.charAt(0).toUpperCase()}</div><span class="font-medium text-slate-200 text-sm">${s.name}</span></div><div class="flex items-center gap-2">${oc>0?`<button onclick="openObsModal('${s.id}')" class="bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 rounded-full px-2.5 py-0.5 text-xs font-medium transition cursor-pointer" title="Ver observaciones">${oc}</button>`:''}<button onclick="openObsModal('${s.id}')" class="text-cyan-400 hover:text-cyan-400" title="Añadir observación"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg></button><button onclick="deleteStudent('${s.id}')" class="text-red-400 hover:text-red-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></div>`; }); h+='</div></div>'; }); c.innerHTML=h; }
+    function renderStudents() { const c=document.getElementById('studentList'); const lh=document.getElementById('accListadoHint'); if (lh) lh.textContent = (data.students||[]).length ? ` · ${(data.students||[]).length} alumno(s)` : ''; const fg=document.getElementById('filterStudentGrupo')?.value||''; const sr=document.getElementById('searchStudent')?.value?.toLowerCase()||''; let f=data.students; if(fg) f=f.filter(s=>s.groupId===fg); if(sr) f=f.filter(s=>s.name.toLowerCase().includes(sr)); if(!f.length) { c.innerHTML='<p class="text-slate-400 text-center py-8">Sin alumnos</p>'; return; } const grp={}; f.forEach(s=>{if(!grp[s.groupId])grp[s.groupId]=[];grp[s.groupId].push(s);}); let h=''; Object.keys(grp).forEach(gId=>{ const g=data.groups.find(g=>g.id===gId); h+=`<div class="mb-4"><h3 class="font-bold text-slate-200 mb-2 bg-slate-800/40 px-3 py-1.5 rounded-lg border border-slate-700/40">${g?.name||'Sin grupo'} (${grp[gId].length})</h3><div class="space-y-1">`; grp[gId].forEach(s=>{ const oc=data.observations.filter(o=>o.studentId===s.id).length; h+=`<div class="flex items-center justify-between bg-slate-800/40 rounded-xl px-4 py-2.5 border border-slate-700/30 hover:bg-slate-700/40"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-gradient-to-br from-cyan-400 to-violet-500 rounded-full flex items-center justify-center text-white text-xs font-bold">${s.name.charAt(0).toUpperCase()}</div><span class="font-medium text-slate-200 text-sm">${s.name}</span></div><div class="flex items-center gap-2">${oc>0?`<button onclick="openObsModal('${s.id}')" class="bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 rounded-full px-2.5 py-0.5 text-xs font-medium transition cursor-pointer" title="Ver observaciones">${oc}</button>`:''}<button onclick="openObsModal('${s.id}')" class="text-cyan-400 hover:text-cyan-400" title="Añadir observación"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg></button><button onclick="deleteStudent('${s.id}')" class="text-red-400 hover:text-red-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></div>`; }); h+='</div></div>'; }); c.innerHTML=h; }
 
     // IMPORTAR EXCEL / CSV
     function importSeneca() {
