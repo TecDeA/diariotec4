@@ -5,7 +5,7 @@
 // 3. Network-first para el HTML principal (para obtener actualizaciones), fallback a cache
 // 4. Cache-first para imágenes e icons
 
-const CACHE_VERSION = 'tec4-diario-v9';
+const CACHE_VERSION = 'tec4-diario-v10';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -65,9 +65,9 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
 
-  // Si es una petición a Firebase Realtime Database (wss:// o https://*.firebaseio.com)
+  // Si es una petición a Firebase Realtime Database (wss:// o https://*.firebaseio.com / *.firebasedatabase.app)
   // → dejar pasar sin cachear (datos en tiempo real)
-  if (url.hostname.includes('firebaseio.com') || url.protocol === 'ws:' || url.protocol === 'wss:') {
+  if (url.hostname.includes('firebaseio.com') || url.hostname.includes('firebasedatabase.app') || url.protocol === 'ws:' || url.protocol === 'wss:') {
     return;
   }
 
@@ -76,9 +76,11 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          // Cachear la respuesta fresca
-          const clone = res.clone();
-          caches.open(SHELL_CACHE).then((cache) => cache.put(req, clone));
+          // Cachear la respuesta fresca solo si es válida (evita envenenar la caché con 404/500)
+          if (res && res.ok) {
+            const clone = res.clone();
+            caches.open(SHELL_CACHE).then((cache) => cache.put(req, clone));
+          }
           return res;
         })
         .catch(() => {
