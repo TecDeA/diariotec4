@@ -618,6 +618,14 @@
             font-size:0.5rem; opacity:0.8; line-height:1;
             pointer-events:none;
         }
+        /* Vista diaria (pantallas pequeñas): celdas más altas y con adelanto del contenido */
+        .diario-day-view .scell { min-height: 54px; padding: 6px 10px; }
+        .diario-day-view .scell .scell-group-name { font-size: 0.85rem; text-align: left; padding: 0; }
+        .scell-preview-text {
+            font-size: 0.68rem; opacity: 0.85; line-height: 1.3; margin-top: 3px;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden; max-width: 100%; text-align: left;
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -725,13 +733,13 @@
         <!-- DIARIO TAB -->
         <section id="tab-diario" class="tab-content fade-in">
             <!-- Barra de navegación entre semanas -->
-            <div class="glass rounded-2xl p-3 mb-4 max-w-3xl mx-auto flex items-center justify-between gap-2 flex-wrap diario-nav-bar">
+            <div class="glass rounded-2xl p-3 mb-4 flex items-center justify-between gap-2 flex-wrap diario-nav-bar">
                 <div class="flex items-center gap-2">
-                    <button onclick="navPrevWeek()" class="bg-white border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 px-3 py-2 rounded-lg text-sm flex items-center gap-1 transition text-slate-700" title="Semana anterior (una a una)">
+                    <button onclick="navPrevWeek()" class="bg-white border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 px-3 py-2 rounded-lg text-sm flex items-center gap-1 transition text-slate-700" title="Anterior (día en móvil, semana en escritorio)">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                         <span class="hidden sm:inline">Anterior</span>
                     </button>
-                    <button onclick="navNextWeek()" class="bg-white border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 px-3 py-2 rounded-lg text-sm flex items-center gap-1 transition text-slate-700" title="Semana siguiente (una a una)">
+                    <button onclick="navNextWeek()" class="bg-white border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 px-3 py-2 rounded-lg text-sm flex items-center gap-1 transition text-slate-700" title="Siguiente (día en móvil, semana en escritorio)">
                         <span class="hidden sm:inline">Siguiente</span>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </button>
@@ -754,7 +762,7 @@
                     </button>
                 </div>
             </div>
-            <div class="grid grid-cols-1 max-w-3xl mx-auto gap-4" id="diarioScheduleGrid"></div>
+            <div class="grid grid-cols-1 gap-4" id="diarioScheduleGrid"></div>
         </section>
 
         <!-- ALUMNADO TAB -->
@@ -1554,6 +1562,7 @@
         normalizeData();
         appData.courseData[id] = data;
         diarioWeekOffset = computeInitialOffsetForCourse(id);
+        diarioDayOffset = 0;
         saveData();
         populateCourseSelector();
         updateAllGroupSelects();
@@ -1577,7 +1586,7 @@
         populateCourseSelector();
         updateAllGroupSelects();
         renderCourseList();
-        diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId);
+        diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId); diarioDayOffset = 0;
         showTab(activeTab);
     }
     // Rellena el <select> de cursos de la cabecera conservando la selección.
@@ -1828,6 +1837,7 @@
 
     // Al cambiar el tamaño de ventana y cruzar el breakpoint 1024px, cambiar de modo
     let _wasMobile = isMobileMode();
+    let _wasDayView = isDiarioDayMode();
     window.addEventListener('resize', function() {
         const _isMob = isMobileMode();
         if (_isMob !== _wasMobile) {
@@ -1835,6 +1845,12 @@
             // Si pasamos a desktop → mostrar Diario (la navbar gestiona la navegación)
             // Si pasamos a móvil → mostrar pantalla de inicio
             showTab(_isMob ? 'inicio' : 'diario');
+        }
+        // Cruzar el umbral de vista diaria (768px): re-renderizar el Diario si está visible
+        const _isDay = isDiarioDayMode();
+        if (_isDay !== _wasDayView) {
+            _wasDayView = _isDay;
+            if (activeTab === 'diario') renderDiario();
         }
     });
 
@@ -2045,12 +2061,32 @@
     let diarioModalCell = null; // { dateStr, dayIdx, hourIdx, groupId }
     let editingDiarioId = null;
     let diarioWeekOffset = 0; // 0 = semana actual; -N = N semanas atrás; +N = N semanas adelante (planificación)
+    let diarioDayOffset = 0; // 0..4 = día de la semana mostrado (solo se usa en la vista diaria de pantallas pequeñas)
+
+    // Vista diaria: en pantallas pequeñas (<768px) el calendario semanal se
+    // sustituye por una vista de un solo día, más legible en móvil.
+    function isDiarioDayMode() { return window.innerWidth < 768; }
     let diarioActTagFilter = null; // etiqueta activa para filtrar el <select> de actividad del modal de diario
 
     // === Navegación entre semanas del Diario ===
-    function navPrevWeek() { diarioWeekOffset -= 1; renderDiario(); }
-    function navNextWeek() { diarioWeekOffset += 1; renderDiario(); }
-    function navToCurrentWeek() { diarioWeekOffset = 0; renderDiario(); }
+    function navPrevWeek() {
+        if (isDiarioDayMode()) {
+            if (diarioDayOffset > 0) diarioDayOffset--; else { diarioWeekOffset -= 1; diarioDayOffset = 4; }
+        } else {
+            diarioWeekOffset -= 1;
+        }
+        renderDiario();
+    }
+    function navNextWeek() {
+        if (isDiarioDayMode()) {
+            if (diarioDayOffset < 4) diarioDayOffset++; else { diarioWeekOffset += 1; diarioDayOffset = 0; }
+        } else {
+            diarioWeekOffset += 1;
+        }
+        renderDiario();
+    }
+    function navToCurrentWeek() { diarioWeekOffset = 0; diarioDayOffset = 0; renderDiario(); }
+    function jumpToDiarioDay(d) { diarioDayOffset = Math.min(Math.max(d, 0), 4); renderDiario(); }
 
     // === Período estival no lectivo (1 julio – 14 septiembre) ===
     // Estas semanas no aparecen en histórico, planificación ni semana actual.
@@ -2156,6 +2192,7 @@
     // Cierra el desplegable "Ir a…" tras saltar.
     function jumpToWeek(offset) {
         diarioWeekOffset = offset;
+        diarioDayOffset = 0;
         const d = document.getElementById('weekJumpDetails');
         if (d) d.open = false;
         renderDiario();
@@ -2376,6 +2413,107 @@
         renderDiario();
     }
 
+    // Construye la celda del calendario (compartida por la vista semanal y la diaria)
+    function buildDiarioCellHTML(dateStr, di, hi, todayStr, opts) {
+        opts = opts || {};
+        const isToday = dateStr === todayStr;
+        // Una entrada es "futura" (planificación) si su fecha es estrictamente posterior a hoy.
+        const isFutureDate = dateStr > todayStr;
+        // En verano (1 jul – 14 sept) no se muestra el horario del profesor.
+        const dateIsSummer = isDateInSummer(dateStr);
+        const schedKey = `${di}-${hi}`;
+        const groupId = dateIsSummer ? '' : (data.schedule[schedKey] || '');
+        const group = groupId ? data.groups.find(g => g.id === groupId) : null;
+        const entry = dateIsSummer ? null : findEntryForCell(dateStr, hi + 1, groupId);
+
+        let cls = 'scell';
+        let inline = '';
+        const gc = group ? getGroupColor(groupId) : null;
+        if (entry) {
+            cls += gc ? ' scell-entry' : '';
+            const c = gc || { bg:'rgba(16,185,129,0.08)', border:'rgba(16,185,129,0.15)', text:'#34d399' };
+            inline = `background:${c.bg};border-color:${c.border};color:${c.text};`;
+        } else if (group) {
+            cls += ' scell-group';
+            inline = `background:${gc.bg};border-color:${gc.border};color:${gc.text};`;
+        } else {
+            cls += ' scell-free';
+        }
+        if (isToday) cls += ' scell-today';
+        // Si la celda tiene entrada y la fecha es futura → marca de planificación parpadeante
+        if (entry && isFutureDate) cls += ' scell-future-entry';
+        // Fechas estivales: atenuadas y no clickables
+        if (dateIsSummer) cls += ' scell-summer';
+        // Días no lectivos (JSON importado): marcados con 🚫 y sin anotaciones nuevas
+        const ntd = dateIsSummer ? null : getNonTeachingDay(dateStr);
+        if (ntd) cls += ' scell-nonlectivo';
+
+        if (dateIsSummer) {
+            // Celda de verano: vacía, no clickable
+            return `<div class="${cls}" style="${inline}"><span class="opacity-30">—</span></div>`;
+        }
+
+        // Tooltip (hover / pulsación larga) para celdas con entrada o día no lectivo
+        const tip = buildCellTip(dateStr, di, hi, groupId, entry, ntd);
+        let attrs = `data-fecha="${dateStr}" data-di="${di}" data-hi="${hi}" data-grupo="${groupId}" onclick="onDiarioCellClick(event,this)"`;
+        if (tip) attrs += ` data-tip="${escHtml(tip).replace(/\n/g, '&#10;')}"`;
+
+        let inner = '';
+        if (group) {
+            inner += `<span class="font-semibold scell-group-name">${escHtml(group.name)}</span>`;
+            if (entry) {
+                inner += `<div class="scell-check" style="color:${gc.text}">✓</div>`;
+                if (opts.preview && entry.contenido) inner += `<div class="scell-preview-text">${escHtml(entry.contenido)}</div>`;
+            }
+        } else if (entry) {
+            inner += `<div class="scell-check" style="color:#34d399">✓</div>`;
+            if (opts.preview && entry.contenido) inner += `<div class="scell-preview-text">${escHtml(entry.contenido)}</div>`;
+        } else {
+            inner += `<span class="opacity-30">+</span>`;
+        }
+        return `<div class="${cls}" style="${inline}" ${attrs}>${inner}</div>`;
+    }
+
+    // Tarjeta de la vista diaria (pantallas pequeñas): un solo día con sus 6 horas
+    function buildDiarioDayCard(monday, dayOffset, todayStr) {
+        const cd = new Date(monday); cd.setDate(monday.getDate() + dayOffset);
+        const dateStr = toLocalDateStr(cd);
+        const isToday = dateStr === todayStr;
+        const ntd = getNonTeachingDay(dateStr);
+        const isFutureDay = dateStr > todayStr;
+        const isPastDay = dateStr < todayStr;
+
+        let h = `<div class="glass week-card diario-day-view ${isToday ? 'current-week ring-1 ring-cyan-500/20' : ''} ${isFutureDay ? 'ring-1 ring-amber-500/30' : ''}">`;
+        h += `<div class="week-header"><span class="text-sm font-semibold ${isToday ? 'text-cyan-400' : isFutureDay ? 'text-amber-400' : 'text-slate-300'}">${DAYS[dayOffset]} ${cd.getDate()} de ${CAL_MONTH_NAMES[cd.getMonth()]} ${cd.getFullYear()}</span>`;
+        if (ntd) {
+            const catName = (ntd.categorias || [])[0] || 'No lectivo';
+            h += `<span class="text-xs bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full font-medium" title="${escHtml(((ntd.categorias||[]).join(', ') || 'No lectivo') + (ntd.detalle ? ' – ' + ntd.detalle : ''))}">🚫 ${escHtml(catName)}</span>`;
+        } else if (isToday) {
+            h += `<span class="text-xs bg-cyan-500/15 text-cyan-400 px-2 py-0.5 rounded-full font-medium">Hoy</span>`;
+        }
+        h += `</div>`;
+
+        // Selector rápido de día de la semana
+        h += `<div class="flex gap-1 justify-center flex-wrap pt-2">`;
+        for (let d2 = 0; d2 < 5; d2++) {
+            const c2 = new Date(monday); c2.setDate(monday.getDate() + d2);
+            const active = d2 === dayOffset;
+            const todayCls = toLocalDateStr(c2) === todayStr ? 'font-bold' : '';
+            h += `<button onclick="jumpToDiarioDay(${d2})" class="px-3 py-1.5 rounded-lg text-xs font-medium border transition ${active ? 'tab-active border-transparent' : 'bg-white border-slate-200 text-slate-500 hover:bg-indigo-50 hover:border-indigo-200'} ${todayCls}">${CAL_DAY_SHORT[d2]} ${c2.getDate()}</button>`;
+        }
+        h += `</div>`;
+
+        h += `<div class="p-3 space-y-2">`;
+        for (let hi = 0; hi < HOURS.length; hi++) {
+            h += `<div class="flex items-stretch gap-2">`;
+            h += `<div class="w-24 shrink-0 flex items-center justify-end text-right text-[0.62rem] font-semibold text-slate-400 pr-1 leading-tight">${HOURS[hi]}</div>`;
+            h += `<div class="flex-1">${buildDiarioCellHTML(dateStr, dayOffset, hi, todayStr, { preview: true })}</div>`;
+            h += `</div>`;
+        }
+        h += `</div></div>`;
+        return h;
+    }
+
     function renderDiario() {
         const grid = document.getElementById('diarioScheduleGrid');
         if (!grid) return;
@@ -2436,19 +2574,30 @@
 
         // Semana mostrada = semana actual + diarioWeekOffset (permite navegar atrás/adelante).
         // diarioWeekOffset === 0 → semana actual; > 0 → planificación futura; < 0 → histórico.
+        // En pantallas pequeñas (<768px) se muestra una vista diaria en lugar de la semana.
+        const isDayMode = isDiarioDayMode();
+        const viewDayOffset = Math.min(Math.max(diarioDayOffset, 0), 4);
         const viewMonday = new Date(currentMonday);
         viewMonday.setDate(viewMonday.getDate() + (diarioWeekOffset * 7));
         const viewFriday = new Date(viewMonday);
         viewFriday.setDate(viewMonday.getDate() + 4);
-        const isCurrent = diarioWeekOffset === 0;
-        const isFuture = diarioWeekOffset > 0;
+        const viewDayDate = new Date(viewMonday);
+        viewDayDate.setDate(viewMonday.getDate() + viewDayOffset);
+        const viewDayStr = toLocalDateStr(viewDayDate);
+        const isCurrent = diarioWeekOffset === 0 && (!isDayMode || viewDayStr === todayStr);
+        const isFuture = isDayMode ? viewDayStr > todayStr : diarioWeekOffset > 0;
 
         // === Actualizar la barra de navegación ===
         const weekLabel = document.getElementById('diarioWeekLabel');
         if (weekLabel) {
-            const labelTxt = DAYS[0] + ' ' + viewMonday.getDate() + ' – ' + DAYS[4] + ' ' + viewFriday.getDate() + ' ' + CAL_MONTH_NAMES[viewFriday.getMonth()] + ' ' + (viewMonday.getFullYear() === viewFriday.getFullYear() ? viewFriday.getFullYear() : viewMonday.getFullYear() + '/' + String(viewFriday.getFullYear()).slice(-2));
+            let labelTxt;
+            if (isDayMode) {
+                labelTxt = DAYS[viewDayOffset] + ' ' + viewDayDate.getDate() + ' de ' + CAL_MONTH_NAMES[viewDayDate.getMonth()] + ' ' + viewDayDate.getFullYear();
+            } else {
+                labelTxt = DAYS[0] + ' ' + viewMonday.getDate() + ' – ' + DAYS[4] + ' ' + viewFriday.getDate() + ' ' + CAL_MONTH_NAMES[viewFriday.getMonth()] + ' ' + (viewMonday.getFullYear() === viewFriday.getFullYear() ? viewFriday.getFullYear() : viewMonday.getFullYear() + '/' + String(viewFriday.getFullYear()).slice(-2));
+            }
             let badge = '';
-            if (isCurrent) badge = ' · Esta semana';
+            if (isCurrent) badge = isDayMode ? ' · Hoy' : ' · Esta semana';
             else if (isFuture) badge = ' · Planificación';
             else badge = ' · Histórico';
             weekLabel.textContent = labelTxt + badge;
@@ -2469,6 +2618,13 @@
         renderWeekJumpPicker();
 
         let html = '';
+
+        // Vista diaria (pantallas pequeñas): tarjeta con el día seleccionado
+        if (isDayMode) {
+            html += buildDiarioDayCard(viewMonday, viewDayOffset, todayStr);
+            grid.innerHTML = warnHtml + html;
+            return;
+        }
 
         // Render de la única semana navegable
         const monday = viewMonday;
@@ -2504,62 +2660,7 @@
             for (let di = 0; di < 5; di++) {
                 const cd = new Date(monday); cd.setDate(monday.getDate() + di);
                 const dateStr = toLocalDateStr(cd);
-                const isToday = dateStr === todayStr;
-                // Una entrada es "futura" (planificación) si su fecha es estrictamente posterior a hoy.
-                const isFutureDate = dateStr > todayStr;
-                // En verano (1 jul – 14 sept) no se muestra el horario del profesor.
-                const dateIsSummer = isDateInSummer(dateStr);
-                const schedKey = `${di}-${hi}`;
-                const groupId = dateIsSummer ? '' : (data.schedule[schedKey] || '');
-                const group = groupId ? data.groups.find(g => g.id === groupId) : null;
-                const entry = dateIsSummer ? null : findEntryForCell(dateStr, hi + 1, groupId);
-
-                // Cell style
-                let cls = 'scell';
-                let inline = '';
-                const gc = group ? getGroupColor(groupId) : null;
-                if (entry) {
-                    cls += gc ? ' scell-entry' : '';
-                    const c = gc || { bg:'rgba(16,185,129,0.08)', border:'rgba(16,185,129,0.15)', text:'#34d399' };
-                    inline = `background:${c.bg};border-color:${c.border};color:${c.text};`;
-                } else if (group) {
-                    cls += ' scell-group';
-                    inline = `background:${gc.bg};border-color:${gc.border};color:${gc.text};`;
-                } else {
-                    cls += ' scell-free';
-                }
-                if (isToday) cls += ' scell-today';
-                // Si la celda tiene entrada y la fecha es futura → marca de planificación parpadeante
-                if (entry && isFutureDate) cls += ' scell-future-entry';
-                // Fechas estivales: atenuadas y no clickables
-                if (dateIsSummer) cls += ' scell-summer';
-                // Días no lectivos (JSON importado): marcados con 🚫 y sin anotaciones nuevas
-                const ntd = dateIsSummer ? null : getNonTeachingDay(dateStr);
-                if (ntd) cls += ' scell-nonlectivo';
-
-                if (dateIsSummer) {
-                    // Celda de verano: vacía, no clickable
-                    html += `<td><div class="${cls}" style="${inline}"><span class=\"opacity-30\">—</span></div></td>`;
-                } else {
-                    // Tooltip (hover / pulsación larga) para celdas con entrada o día no lectivo
-                    const tip = buildCellTip(dateStr, di, hi, groupId, entry, ntd);
-                    let attrs = `data-fecha="${dateStr}" data-di="${di}" data-hi="${hi}" data-grupo="${groupId}" onclick="onDiarioCellClick(event,this)"`;
-                    if (tip) attrs += ` data-tip="${escHtml(tip).replace(/\n/g, '&#10;')}"`;
-                    html += `<td><div class="${cls}" style="${inline}" ${attrs}>`;
-
-                    if (group) {
-                        html += `<span class="font-semibold scell-group-name">${escHtml(group.name)}</span>`;
-                        if (entry) {
-                            html += `<div class="scell-check" style="color:${gc.text}">✓</div>`;
-                        }
-                    } else if (entry) {
-                        html += `<div class="scell-check" style="color:#34d399">✓</div>`;
-                    } else {
-                        html += `<span class="opacity-30">+</span>`;
-                    }
-
-                    html += `</div></td>`;
-                }
+                html += `<td>${buildDiarioCellHTML(dateStr, di, hi, todayStr)}</td>`;
             }
             html += `</tr>`;
         }
@@ -3622,7 +3723,7 @@ ${body}
     // Exporta el sobre completo (todos los cursos). Si se quiere exportar solo el curso activo,
     // basta con exportar appData.courseData[currentCourseId], pero lo habitual es llevarse todos.
     function exportAllData() { const b=new Blob([JSON.stringify(appData,null,2)],{type:'application/json'}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=`tec4_diario_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(u); }
-    function importAllData(event) { const f=event.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=function(e) { try { const imp=JSON.parse(e.target.result); if(confirm('¿Reemplazar todos los datos actuales (incluidos todos los cursos)?')) { if (imp && Array.isArray(imp.courses) && imp.courseData) { appData=imp; normalizeAppData(); } else { appData=migrateOldFormat(imp); normalizeAppData(); } normalizeData(); diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId); saveData(); populateCourseSelector(); updateAllGroupSelects(); showTab(isMobileMode() ? 'inicio' : 'diario'); alert('Importado'); } } catch(err) { alert('Error'); } }; r.readAsText(f); event.target.value=''; }
+    function importAllData(event) { const f=event.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=function(e) { try { const imp=JSON.parse(e.target.result); if(confirm('¿Reemplazar todos los datos actuales (incluidos todos los cursos)?')) { if (imp && Array.isArray(imp.courses) && imp.courseData) { appData=imp; normalizeAppData(); } else { appData=migrateOldFormat(imp); normalizeAppData(); } normalizeData(); diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId); diarioDayOffset = 0; saveData(); populateCourseSelector(); updateAllGroupSelects(); showTab(isMobileMode() ? 'inicio' : 'diario'); alert('Importado'); } } catch(err) { alert('Error'); } }; r.readAsText(f); event.target.value=''; }
 
     // Cierra el desplegable "Ir a…" al hacer clic fuera de él.
     document.addEventListener('click', function(e) {
@@ -3663,7 +3764,7 @@ ${body}
         }
         // Posicionar el Diario en la semana apropiada del curso activo
         // (semana actual si hoy cae dentro del curso, o primera/última en caso contrario).
-        diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId);
+        diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId); diarioDayOffset = 0;
         populateCourseSelector();
         updateAllGroupSelects();
         applyTheme();
