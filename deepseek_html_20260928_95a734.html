@@ -197,6 +197,25 @@
         /* Nombre de grupo en celdas: truncar para evitar overflow/superposición */
         .scell-group-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; padding: 0 2px; }
         .week-card { border-radius: 1rem; overflow: hidden; }
+        /* Celda con varios grupos: apila mini-celdas */
+        .scell-multi {
+            display: flex; flex-direction: column; gap: 2px;
+            min-height: 40px; border-radius: 0.4rem; padding: 2px;
+        }
+        .scell-multi .scell-mini {
+            display: flex; align-items: center; justify-content: space-between; gap: 3px;
+            min-height: 16px; padding: 1px 4px; border-radius: 0.25rem;
+            border-width: 1px; border-style: solid;
+            font-size: 0.58rem; line-height: 1.15;
+            cursor: pointer; transition: filter 0.15s; overflow: hidden;
+            position: relative;
+        }
+        .scell-multi .scell-mini:hover { filter: brightness(0.97); }
+        .scell-multi .scell-mini.scell-future-entry::after {
+            font-size: 0.45rem; top: 0; right: 1px;
+        }
+        .scell-mini-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+        .scell-mini-check { font-weight: 800; flex-shrink: 0; }
         /* Panel desplegable "Ir a…" para saltar a cualquier semana del curso */
         #weekJumpDetails > summary::-webkit-details-marker { display: none; }
         #weekJumpDetails[open] > summary { background: #eef2ff; border-color: #c7d2fe; color: #4f46e5; }
@@ -231,7 +250,6 @@
         .week-jump-badge.past { background: #94a3b8; color: #fff; }
         .week-header { padding: 0.5rem 0.75rem; background: #f9fafb; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
         .week-card.current-week .week-header { background: #eef2ff; border-bottom-color: #c7d2fe; }
-        /* El span de fecha del week-header debe poder encogerse y envolverse en móvil */
         .week-header > span:first-child { min-width: 0; flex: 1 1 auto; }
         .scell-table { width: 100%; border-collapse: separate; border-spacing: 2px; }
         .scell-table th { padding: 4px 2px; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; text-align: center; }
@@ -257,21 +275,17 @@
         .ctag-act-yes:hover, .ctag-act-yes.active { background: #d97706; color: #ffffff; border-color: #d97706; }
         .ctag-act-no { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
         .ctag-act-no:hover, .ctag-act-no.active { background: #4b5563; color: #ffffff; border-color: #4b5563; }
-        /* Botón "Nueva actividad" — estilo esmeralda/teal coherente con el botón Guardar del modal */
         .ctag-act-new { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
         .ctag-act-new:hover { background: #059669; color: #ffffff; border-color: #059669; }
-        /* Grid de botones superiores de Actividades: 2x2 en móvil, 2:2:2:1 en escritorio */
         .actividades-top-grid { grid-template-columns: 1fr 1fr; }
         @media (min-width: 641px) {
             .actividades-top-grid { grid-template-columns: 2fr 2fr 2fr 1fr; }
         }
-        /* En móvil, los botones de Actividades permiten texto centrado y wrap */
         @media (max-width: 640px) {
             .actividades-top-grid .ctag { text-align: center; justify-content: center; padding: 10px 6px; font-size: 0.75rem; }
         }
         .ctag-count { font-size: 0.75rem; font-weight: 500; opacity: 0.7; }
         .ctag.active .ctag-count { opacity: 0.85; }
-        /* Filtered inline list below ctag buttons */
         .ctag-filtered-list { margin-top: 16px; border-top: 1px solid #e5e7eb; padding-top: 16px; max-height: 60vh; overflow-y: auto; }
         .ctag-fl-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px; border-radius: 0.5rem; margin-bottom: 4px; transition: background 0.15s; }
         .ctag-fl-item:hover { background: #f3f4f6; }
@@ -294,42 +308,18 @@
         input[type="file"]::file-selector-button:hover {
             background: #e0e7ff;
         }
-
-        /* ============================================================
-           ESTADO SELECCIONADO — ligero refuerzo visual sobre el tema claro
-           El CSS base ya pinta el estado activo con color sólido + texto blanco.
-           Aquí solo añadimos un ✓ delante y el estilo del botón "Todas".
-           ============================================================ */
-
         /* Botón "Todas" en la barra superior de Actividades */
         .ctag-act-all { background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; }
         .ctag-act-all:hover { background: #e0e7ff; border-color: #a5b4fc; }
         .ctag-act-all.active { background: #4f46e5; color: #ffffff; border-color: #4f46e5; }
-
         /* Marca ✓ en etiquetas de filtro y formulario cuando están activas */
-        .act-tag-filter.active::before {
-            content: '✓ ';
-            font-weight: 700;
-            margin-right: 2px;
-        }
-        .act-tag-colors.selected::before {
-            content: '✓ ';
-            font-weight: 700;
-            margin-right: 2px;
-        }
-
-        /* ============================================================
-           OVERRIDES DE CLASES TAILWIND MODO OSCURO
-           El HTML original usa muchos text-slate-100/300/400 y bg-slate-800/50
-           que serían invisibles sobre las nuevas superficies blancas.
-           Aquí se reasignan a colores legibles en tema claro.
-           ============================================================ */
-        /* Textos claros → oscuros (legibles sobre blanco) */
+        .act-tag-filter.active::before { content: '✓ '; font-weight: 700; margin-right: 2px; }
+        .act-tag-colors.selected::before { content: '✓ '; font-weight: 700; margin-right: 2px; }
+        /* Overrides de clases Tailwind modo oscuro */
         .text-slate-100, .text-slate-200, .text-slate-300 { color: #0f172a !important; }
         .text-slate-400 { color: #64748b !important; }
         .text-slate-500 { color: #6b7280 !important; }
         .text-slate-600 { color: #4b5563 !important; }
-        /* Textos de acento neón → tonos sólidos legibles */
         .text-cyan-400, .text-cyan-300 { color: #0e7490 !important; }
         .text-cyan-500 { color: #0891b2 !important; }
         .text-violet-400 { color: #6d28d9 !important; }
@@ -342,13 +332,11 @@
         .text-red-500 { color: #dc2626 !important; }
         .text-blue-400 { color: #1d4ed8 !important; }
         .text-blue-500 { color: #2563eb !important; }
-        /* Fondos oscuros translúcidos → blancos o grises muy claros */
         .bg-slate-800\/50, .bg-slate-800\/40, .bg-slate-800\/30, .bg-slate-800\/60 { background: #ffffff !important; }
         .bg-slate-700\/50, .bg-slate-700\/40, .bg-slate-700\/30 { background: #f3f4f6 !important; }
         .bg-slate-900\/50, .bg-slate-900\/40, .bg-slate-900\/30 { background: #f9fafb !important; }
         .bg-slate-800 { background: #ffffff !important; }
         .bg-slate-700 { background: #f3f4f6 !important; }
-        /* Fondos con acento neón translúcido → tonos claros sólidos */
         .bg-cyan-500\/10, .bg-cyan-500\/15, .bg-cyan-500\/20 { background: #ecfeff !important; }
         .bg-violet-500\/10, .bg-violet-500\/15 { background: #f5f3ff !important; }
         .bg-emerald-500\/10, .bg-emerald-500\/15 { background: #ecfdf5 !important; }
@@ -356,14 +344,12 @@
         .bg-red-500\/10, .bg-red-500\/15 { background: #fef2f2 !important; }
         .bg-blue-500\/10, .bg-blue-500\/15 { background: #eff6ff !important; }
         .bg-white\/5 { background: #f9fafb !important; }
-        /* Borders oscuros → grises claros */
         .border-slate-700\/40, .border-slate-700\/30, .border-slate-700\/50 { border-color: #e5e7eb !important; }
         .border-slate-600\/40 { border-color: #d1d5db !important; }
         .border-slate-700 { border-color: #e5e7eb !important; }
         .border-slate-600 { border-color: #d1d5db !important; }
         .border-cyan-500\/20, .border-cyan-500\/30 { border-color: #c7d2fe !important; }
         .border-white\/10 { border-color: #e5e7eb !important; }
-        /* Hover states que usaban fondos oscuros */
         .hover\:bg-slate-700\/40:hover { background: #f3f4f6 !important; }
         .hover\:bg-slate-700\/50:hover { background: #f3f4f6 !important; }
         .hover\:bg-white\/5:hover { background: #f3f4f6 !important; }
@@ -371,16 +357,9 @@
         .hover\:text-cyan-400:hover { color: #4f46e5 !important; }
         .hover\:border-cyan-500\/30:hover { border-color: #a5b4fc !important; }
         .hover\:border-emerald-500\/20:hover { border-color: #c7d2fe !important; }
-
-        /* ============================================================
-           RESPONSIVE — MÓVIL / TABLET ANDROID
-           ============================================================ */
-        /* Safe area para dispositivos con notch/punch-hole */
+        /* RESPONSIVE — MÓVIL / TABLET ANDROID */
         body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
         .glass-nav { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
-
-        /* Touch targets mínimos: 44x44px (Apple) / 48dp (Material) */
-        /* Mejora global de touch targets para botones de icono pequeños en listas/tarjetas */
         .glass.rounded-xl button[class*="p-1"]:has(svg),
         .orphan-entry button:has(svg),
         #obsList button:has(svg),
@@ -395,55 +374,33 @@
             align-items: center;
             justify-content: center;
         }
-
-        /* .act-tag más grande y táctil */
         .act-tag { font-size: 0.78rem; padding: 6px 14px; min-height: 32px; }
-
-        /* Botones de cabecera más compactos en móvil (oculta texto, muestra solo icono) */
         @media (max-width: 640px) {
             .header-btn-text { display: none; }
             .header-btn { padding: 0.5rem 0.6rem; }
-            /* El selector de curso ocupa menos ancho en móvil */
             #courseSelector { min-width: 100px !important; }
-            /* Cabecera: permitir wrap para que los botones bajen a una segunda línea si hace falta */
             header .max-w-7xl > div:first-child { flex-wrap: wrap; gap: 0.5rem; }
-            /* Nav tabs: scroll-snap para mejor UX móvil */
             #tabsContainer { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
             #tabsContainer > button { scroll-snap-align: start; }
-            /* Botones ctag en móvil: permiten wrap de texto y reducen padding */
             .ctag { padding: 8px 10px; font-size: 0.78rem; white-space: normal !important; line-height: 1.15; }
             .ctag-wrap { min-width: 0; }
-            /* === Diario: barra de navegación semanal apilada en móvil === */
             .diario-nav-bar { flex-direction: column; align-items: stretch; gap: 0.5rem; }
             .diario-nav-bar > div { width: 100%; justify-content: center; }
-            .diario-nav-bar > div:nth-child(2) { order: -1; /* etiqueta arriba */ }
+            .diario-nav-bar > div:nth-child(2) { order: -1; }
             .diario-nav-bar button { flex: 1; justify-content: center; }
-            /* Calendario del Diario: scroll horizontal si hace falta + celdas más compactas */
             .scell-table { font-size: 0.55rem; }
             .week-card .p-2 { overflow-x: auto; -webkit-overflow-scrolling: touch; }
             .scell { min-height: 36px; padding: 2px 1px; }
             .scell-table th { padding: 3px 1px; }
             .scell-table .hour-label { padding: 2px 3px; font-size: 0.5rem; }
-            /* Modales: ocupan casi toda la pantalla en móvil */
             .modal-overlay { padding: 0.5rem !important; }
-            /* Filtro selects de grupo: ancho flexible en móvil */
             select[id$="GroupFilter"] { min-width: 0 !important; flex: 1; max-width: 200px; }
-            /* Informes: tarjetas de métricas apiladas */
             #informesContent .grid { gap: 0.5rem; }
-            /* Reports popup: márgenes reducidos en móvil */
         }
-
-        /* Tablets: ajustes intermedios */
         @media (min-width: 641px) and (max-width: 1024px) {
             .ctag { font-size: 0.82rem; }
         }
-
-        /* ============================================================
-           MODELO MIXTO (V3) — Navbar en desktop, pantalla de inicio en móvil/tablet
-           Breakpoint: 1024px (móvil/tablet < 1024px, desktop ≥ 1024px)
-           ============================================================ */
-
-        /* --- Pantalla de inicio (solo visible en móvil/tablet) --- */
+        /* MODELO MIXTO (V3) */
         #tab-inicio {
             min-height: calc(100vh - 200px);
             display: flex;
@@ -492,8 +449,6 @@
         .ib-saberes { background: linear-gradient(135deg, #fff7ed, #ffedd5); color: #c2410c; border-color: #fed7aa; }
         .ib-criterios { background: linear-gradient(135deg, #faf5ff, #f3e8ff); color: #7e22ce; border-color: #e9d5ff; }
         .ib-informes { background: linear-gradient(135deg, #fffbeb, #fef3c7); color: #b45309; border-color: #fde68a; }
-
-        /* --- Botón flotante "Inicio" (solo en móvil/tablet) --- */
         .home-fab {
             position: fixed;
             bottom: 1.5rem;
@@ -516,15 +471,11 @@
         .home-fab:hover { background: #4338ca; transform: scale(1.08); }
         .home-fab:active { transform: scale(0.95); }
         .home-fab svg { width: 1.75rem; height: 1.75rem; }
-
-        /* === Media queries del modelo mixto === */
-        /* Desktop (≥1024px): mostrar navbar, ocultar pantalla de inicio y FAB */
         @media (min-width: 1024px) {
             .glass-nav { display: block !important; }
             #tab-inicio { display: none !important; }
             .home-fab { display: none !important; }
         }
-        /* Móvil/Tablet (<1024px): ocultar navbar, mostrar pantalla de inicio + FAB */
         @media (max-width: 1023px) {
             .glass-nav { display: none !important; }
             .inicio-grid { gap: 0.5rem; max-width: 100%; }
@@ -534,14 +485,9 @@
             .inicio-btn-sub { font-size: 0.65rem; }
             .home-fab { width: 48px; height: 48px; bottom: 1rem; right: 1rem; }
             .home-fab svg { width: 1.5rem; height: 1.5rem; }
-            /* Último botón (Informes): ocupa el ancho completo de la pantalla */
             .ib-informes { grid-column: 1 / -1; }
         }
-
-        /* ============================================================
-           MODO NOCHE — automático según la hora del sistema (20:00–8:00)
-           o manual con el botón de la cabecera. Se activa con html.dark.
-           ============================================================ */
+        /* MODO NOCHE */
         html.dark body { background:#0b1220; color:#e2e8f0; }
         html.dark .glass { background:#111a2e; border-color:#24304a; box-shadow:0 1px 2px rgba(0,0,0,0.35); }
         html.dark .glass-input { background:#0d1526; border-color:#33415c; color:#e2e8f0; }
@@ -570,7 +516,6 @@
         html.dark .scell-table th { color:#8896ab; }
         html.dark .scell-table .hour-label { color:#8896ab; }
         html.dark .week-jump-empty { color:#64748b; }
-        /* Reasignación de clases Tailwind claras → oscuras (invierte el bloque claro) */
         html.dark .text-slate-100, html.dark .text-slate-200, html.dark .text-slate-300 { color:#e2e8f0 !important; }
         html.dark .text-slate-400 { color:#94a3b8 !important; }
         html.dark .text-slate-500 { color:#7c8aa0 !important; }
@@ -599,11 +544,7 @@
         html.dark .hover\:border-indigo-200:hover, html.dark .hover\:border-emerald-300:hover { border-color:#4f46e5 !important; }
         html.dark .tab-btn:not(.tab-active) { color:#94a3b8 !important; }
         html.dark .tab-btn:not(.tab-active):hover { color:#e2e8f0 !important; background:rgba(255,255,255,0.06) !important; }
-
-        /* ============================================================
-           TOOLTIP DEL CALENDARIO (hover en escritorio, pulsación larga
-           en móvil) y marcador de días no lectivos
-           ============================================================ */
+        /* TOOLTIP DEL CALENDARIO */
         .cell-tooltip {
             position: fixed; z-index: 90; display: none;
             max-width: 280px;
@@ -618,7 +559,6 @@
             font-size:0.5rem; opacity:0.8; line-height:1;
             pointer-events:none;
         }
-        /* Vista diaria (pantallas pequeñas): celdas más altas y con adelanto del contenido */
         .diario-day-view .scell { min-height: 54px; padding: 6px 10px; }
         .diario-day-view .scell .scell-group-name { font-size: 0.85rem; text-align: left; padding: 0; }
         .scell-preview-text {
@@ -684,6 +624,9 @@
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 py-6">
 
+        <!-- AVISO DE CLASE EN CURSO (se muestra durante los 5 primeros minutos desde el inicio) -->
+        <div id="classNotification" class="hidden mb-4"></div>
+
         <!-- PANTALLA DE INICIO (V3 — solo visible en móvil/tablet) -->
         <section id="tab-inicio" class="tab-content fade-in hidden">
             <div class="inicio-grid">
@@ -725,14 +668,13 @@
             </div>
         </section>
 
-        <!-- Botón flotante Inicio (solo visible en móvil/tablet, oculto en pantalla de inicio) -->
+        <!-- Botón flotante Inicio -->
         <button id="homeFab" class="home-fab hidden" onclick="goHome()" title="Volver al inicio">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
         </button>
 
         <!-- DIARIO TAB -->
         <section id="tab-diario" class="tab-content fade-in">
-            <!-- Barra de navegación entre semanas -->
             <div class="glass rounded-2xl p-3 mb-4 flex items-center justify-between gap-2 flex-wrap diario-nav-bar">
                 <div class="flex items-center gap-2">
                     <button onclick="navPrevWeek()" class="bg-white border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 px-3 py-2 rounded-lg text-sm flex items-center gap-1 transition text-slate-700" title="Anterior (día en móvil, semana en escritorio)">
@@ -748,7 +690,6 @@
                     <span id="diarioWeekLabel" class="text-sm font-semibold text-slate-300 text-center truncate"></span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <!-- Selector directo de semana (salto a cualquier semana del curso) -->
                     <details id="weekJumpDetails" class="relative">
                         <summary class="bg-white border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 px-3 py-2 rounded-lg text-sm flex items-center gap-1 transition text-slate-700 cursor-pointer list-none" title="Saltar a una semana concreta">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -983,7 +924,11 @@
     <div id="scheduleModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
         <div class="glass rounded-2xl shadow-2xl max-w-md w-full p-6">
             <h3 class="font-bold text-lg mb-4 text-slate-100" id="scheduleModalTitle">Editar horario</h3>
-            <div class="mb-4"><label class="block text-sm font-medium text-slate-300 mb-1">Asignar grupo</label><select id="scheduleGrupoSelect" class="w-full glass-input rounded-lg px-3 py-2 text-sm"><option value="">Sin asignar</option></select></div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-slate-300 mb-1">Asignar grupo(s)</label>
+                <div id="scheduleGroupCheckboxes" class="space-y-1 max-h-56 overflow-y-auto border border-slate-700/40 rounded-lg p-2 bg-slate-800/40"></div>
+                <p class="text-xs text-slate-500 mt-2">Puedes seleccionar varios grupos si comparten la misma franja horaria.</p>
+            </div>
             <div class="flex gap-2 justify-between"><button id="scheduleDeleteBtn" onclick="deleteScheduleFromModal()" class="px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition border border-red-500/20 hidden">Eliminar</button><div class="flex gap-2"><button onclick="closeScheduleModal()" class="px-4 py-2 text-sm text-slate-300 hover:bg-white/5 rounded-lg transition border border-slate-600/40">Cancelar</button><button onclick="saveSchedule()" class="bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-4 py-2 rounded-xl text-sm hover:from-cyan-500 hover:to-blue-500 transition shadow-lg shadow-cyan-500/20">Guardar</button></div></div>
         </div>
     </div>
@@ -1135,16 +1080,9 @@
     const db = firebase.database();
 
     // ==================== PROTECCIÓN DE DATOS ====================
-    // Ruta compartida fija: todos los dispositivos sincronizan automáticamente.
-    // Capas de protección:
-    // 1. APP_SIGNATURE → identifica que los datos pertenecen a esta app
-    // 2. Checksum → detecta corrupción en los datos almacenados
-    // 3. Versión numérica → detecta escrituras concurrentes/conflictos
-    // 4. ignoreRemoteUpdate → evita bucle eco al escribir datos propios
     const APP_SIGNATURE = 'TEC4_DIARIO_V1';
     const FB_PATH = 'tec4_diario_shared';
 
-    // Calcular checksum para verificar integridad de los datos
     function computeChecksum(obj) {
         const str = JSON.stringify(obj);
         let hash = 0;
@@ -1159,11 +1097,8 @@
     let firebaseReady = false;
     let remoteVersion = 0;
     let localVersion = 0;
-    // Marcado cuando hay cambios locales que no se pudieron subir (sin conexión).
-    // Al reconectar, syncPendingChanges() los fusiona con lo remoto y los sube.
     let pendingSyncPush = false;
 
-    // Escuchar estado de conexión Firebase
     db.ref('.info/connected').on('value', (snap) => {
         if (snap.val() === true) {
             firebaseReady = true;
@@ -1173,9 +1108,6 @@
         }
     });
 
-    // Sincroniza los cambios locales pendientes tras una desconexión:
-    // aplica el estado remoto (protegiendo las creaciones locales vía merge)
-    // y sube el resultado fusionado.
     async function syncPendingChanges() {
         try {
             const snap = await db.ref(FB_PATH + '/data').once('value');
@@ -1206,37 +1138,17 @@
         }
     }
 
-    // Variable para saber qué pestaña está activa y re-renderizar tras sincronizar
     let activeTab = 'diario';
-
-    // Escuchar cambios remotos en tiempo real (solo de OTROS clientes)
     let ignoreRemoteUpdate = false;
     db.ref(FB_PATH + '/data').on('value', (snap) => {
         if (!snap.exists()) return;
         const remote = snap.val();
         if (!remote || !remote.payload) return;
-
-        // Verificar firma: rechazar datos que no sean de esta app
-        if (remote.signature !== APP_SIGNATURE) {
-            console.warn('Datos remotos con firma incorrecta, ignorando.');
-            return;
-        }
-
-        // Si acabamos de escribir nosotros, ignorar para evitar eco
-        if (ignoreRemoteUpdate) {
-            ignoreRemoteUpdate = false;
-            return;
-        }
-
-        // Verificar integridad con checksum
+        if (remote.signature !== APP_SIGNATURE) { console.warn('Datos remotos con firma incorrecta, ignorando.'); return; }
+        if (ignoreRemoteUpdate) { ignoreRemoteUpdate = false; return; }
         const expectedChecksum = computeChecksum(remote.payload);
         remoteVersion = remote.version || 0;
-
-        // Detectar cambio remoto: versión remota mayor que la local
-        // Se aplica automáticamente y se re-renderiza la pestaña activa
         if (remoteVersion > localVersion) {
-            // El payload ahora es el sobre appData (courses + courseData).
-            // Conservamos el curso activo local si sigue existiendo en el remoto.
             const localCurrent = appData.currentCourseId;
             const recovered = mergeLocalCreations(appData, remote.payload);
             appData = remote.payload;
@@ -1251,8 +1163,6 @@
             populateCourseSelector();
             updateAllGroupSelects();
             showTab(activeTab);
-            // Si el checksum no coincide, o se han recuperado grupos/alumnos locales
-            // que el remoto no tenía, re-guardar para propagarlos.
             if (remote.checksum !== expectedChecksum || recovered > 0) {
                 console.warn('Checksum mismatch o datos locales recuperados, re-guardando...');
                 saveDataFirebase();
@@ -1260,14 +1170,8 @@
         }
     });
 
-    // Guardar en Firebase con todas las capas de protección
-    // Se usa un debounce de 600ms para agrupar cambios rápidos y no saturar Firebase
     let firebaseDebounceTimer = null;
 
-    // Fusiona creaciones locales (grupos y alumnado) que aún no existen en el payload
-    // remoto, curso por curso. Evita que una escritura "a pantalla completa" desde un
-    // dispositivo desactualizado borre grupos/alumnos añadidos recientemente.
-    // Devuelve el número de elementos recuperados (0 si no hubo que fusionar nada).
     function mergeLocalCreations(localApp, remoteApp) {
         let recovered = 0;
         const localSlices = (localApp && localApp.courseData) || {};
@@ -1292,12 +1196,7 @@
 
     function saveDataFirebase() {
         if (!firebaseReady) { pendingSyncPush = true; return Promise.resolve(false); }
-
-        // Cancelar envío anterior pendiente (debounce)
-        if (firebaseDebounceTimer) {
-            clearTimeout(firebaseDebounceTimer);
-        }
-
+        if (firebaseDebounceTimer) { clearTimeout(firebaseDebounceTimer); }
         return new Promise((resolve) => {
             firebaseDebounceTimer = setTimeout(() => {
                 localVersion++;
@@ -1309,49 +1208,28 @@
                     payload: appData,
                     lastUpdated: new Date().toISOString()
                 };
-
                 ignoreRemoteUpdate = true;
-
                 db.ref(FB_PATH + '/data').set(payload)
-                    .then(() => {
-                        remoteVersion = localVersion;
-                        pendingSyncPush = false;
-                        resolve(true);
-                    })
-                    .catch((err) => {
-                        localVersion--;
-                        pendingSyncPush = true;
-                        console.error('Error guardando en Firebase:', err);
-                        resolve(false);
-                    });
+                    .then(() => { remoteVersion = localVersion; pendingSyncPush = false; resolve(true); })
+                    .catch((err) => { localVersion--; pendingSyncPush = true; console.error('Error guardando en Firebase:', err); resolve(false); });
             }, 600);
         });
     }
 
-    // Cargar datos desde Firebase al iniciar
     function loadDataFromFirebase() {
         return db.ref(FB_PATH + '/data').once('value').then((snap) => {
             if (!snap.exists()) return false;
             const remote = snap.val();
             if (!remote || !remote.payload) return false;
-            // Verificar firma
-            if (remote.signature !== APP_SIGNATURE) {
-                console.warn('Firma de datos no coincide, ignorando datos remotos.');
-                return false;
-            }
-            // Verificar checksum (si no coincide, se aceptan los datos y se corrige al guardar)
+            if (remote.signature !== APP_SIGNATURE) { console.warn('Firma de datos no coincide, ignorando datos remotos.'); return false; }
             const expectedChecksum = computeChecksum(remote.payload);
             const checksumOk = remote.checksum === expectedChecksum;
-            if (!checksumOk) {
-                console.warn('Checksum mismatch en carga inicial, se aceptan los datos y se corregirá al guardar.');
-            }
+            if (!checksumOk) { console.warn('Checksum mismatch en carga inicial, se aceptan los datos y se corregirá al guardar.'); }
             remoteVersion = remote.version || 0;
             localVersion = remoteVersion;
-            // El payload puede ser el nuevo sobre (courses + courseData) o el formato antiguo (data plano).
             const p = remote.payload;
             const previousLocal = appData;
             if (p && Array.isArray(p.courses) && p.courseData) {
-                // Conservar el curso activo local si sigue existiendo remotamente
                 const localCurrent = appData.currentCourseId;
                 appData = p;
                 normalizeAppData();
@@ -1360,23 +1238,14 @@
                     data = appData.courseData[localCurrent];
                 }
             } else {
-                // Formato antiguo remoto → migrar
                 appData = migrateOldFormat(p);
                 normalizeAppData();
             }
             normalizeData();
-            // Recuperar grupos/alumnos creados localmente que el remoto aún no tiene
-            // (p. ej. escrituras fallidas por falta de conexión): se fusionan y se suben.
             const recovered = mergeLocalCreations(previousLocal, appData);
-            if (recovered > 0) {
-                console.log('Recuperados ' + recovered + ' elementos locales al sincronizar.');
-                saveDataFirebase();
-            }
+            if (recovered > 0) { console.log('Recuperados ' + recovered + ' elementos locales al sincronizar.'); saveDataFirebase(); }
             return true;
-        }).catch((err) => {
-            console.error('Error cargando desde Firebase:', err);
-            return false;
-        });
+        }).catch((err) => { console.error('Error cargando desde Firebase:', err); return false; });
     }
 
     // ==================== SABERES BÁSICOS ====================
@@ -1454,10 +1323,6 @@
     const HOURS = ["1ª (8:15-9:15)", "2ª (9:15-10:15)", "3ª (10:15-11:15)", "4ª (11:45-12:45)", "5ª (12:45-13:45)", "6ª (13:45-14:45)"];
 
     // ==================== MODELO DE DATOS MULTI-CURSO ====================
-    // appData es el "sobre" completo: lista de cursos + datos independientes por curso.
-    // `data` es una referencia directa al slice del curso actualmente seleccionado,
-    // de modo que todo el código existente (data.groups, data.diario, ...) sigue funcionando
-    // sin cambios y muta el objeto correcto en appData.courseData[currentCourseId].
     let appData = { courses: [], currentCourseId: null, courseData: {} };
     let data = null;
 
@@ -1465,11 +1330,9 @@
 
     const DEFAULT_ACTIVITY_TAGS = ['Electrónica Analógica', 'Electrónica Digital', 'Programación'];
 
-    // Devuelve un slice de datos vacío para un curso nuevo.
     function createEmptyCourseData() {
         return { groups: [], students: [], observations: [], schedule: {}, diario: [], activities: [], activityTags: [...DEFAULT_ACTIVITY_TAGS] };
     }
-    // Garantiza que el slice del curso actual (`data`) tenga todas las colecciones.
     function normalizeData() {
         if (!data) data = createEmptyCourseData();
         if (!data.groups) data.groups = [];
@@ -1481,7 +1344,6 @@
         if (!data.activityTags) data.activityTags = [...DEFAULT_ACTIVITY_TAGS];
         if (!data.nonTeachingDays) data.nonTeachingDays = {};
     }
-    // Garantiza que el sobre `appData` tenga la estructura esperada.
     function normalizeAppData() {
         if (!appData) appData = { courses: [], currentCourseId: null, courseData: {} };
         if (!Array.isArray(appData.courses)) appData.courses = [];
@@ -1494,21 +1356,16 @@
         }
         data = appData.courseData[appData.currentCourseId] || null;
         normalizeData();
-        // Sincroniza la referencia en el sobre
         appData.courseData[appData.currentCourseId] = data;
     }
 
-    // === Lógica de curso académico ===
-    // Un curso empieza el 15 de septiembre de `startYear` y acaba el 30 de junio de `endYear`.
-    // Dada una fecha, devuelve a qué curso pertenece.
     function getCourseForDate(d) {
         const y = d.getFullYear();
-        const m = d.getMonth() + 1; // 1-12
+        const m = d.getMonth() + 1;
         const day = d.getDate();
         if (m > 9 || (m === 9 && day >= 15)) return { startYear: y, endYear: y + 1 };
         return { startYear: y - 1, endYear: y };
     }
-    // Construye el objeto curso a partir del año de inicio.
     function buildCourseObject(startYear) {
         const endYear = startYear + 1;
         return {
@@ -1520,7 +1377,6 @@
             createdAt: new Date().toISOString()
         };
     }
-    // Crea un curso nuevo (slice vacío) y cambia a él.
     function createCourse(startYear) {
         const course = buildCourseObject(startYear);
         appData.courses.push(course);
@@ -1529,11 +1385,6 @@
         switchCourse(course.id);
         return course;
     }
-    // Calcula el offset inicial de la semana al cambiar a un curso.
-    // - Si hoy cae dentro del curso (15 sept – 30 jun, excluyendo verano): offset 0 (semana actual).
-    // - Si el curso aún no ha empezado (hoy < 15 sept del startYear): offset apunta a la primera semana.
-    // - Si el curso ya terminó (hoy > 30 jun del endYear): offset apunta a la última semana.
-    // - Si hoy cae en verano entre este curso y el siguiente: offset apunta a la última semana del curso.
     function computeInitialOffsetForCourse(courseId) {
         const course = appData.courses.find(c => c.id === courseId);
         if (!course) return 0;
@@ -1541,20 +1392,14 @@
         const currentMonday = getMondayOfWeek(today);
         const startMonday = courseStartMonday(course);
         const endMonday = courseEndMonday(course);
-        // ¿Hoy está dentro del curso y no en verano?
         const todayStr = toLocalDateStr(today);
         const inCourse = !isDateInSummer(todayStr) && today >= startMonday && today <= endMonday;
         if (inCourse) return 0;
-        // Si hoy es anterior al inicio del curso → primera semana
         if (today < startMonday) {
             return Math.round((startMonday - currentMonday) / (7 * 24 * 60 * 60 * 1000));
         }
-        // Si hoy es posterior al fin del curso (incluido verano posterior) → última semana
         return Math.round((endMonday - currentMonday) / (7 * 24 * 60 * 60 * 1000));
     }
-    // Cambia el curso activo y refresca toda la UI.
-    // Posiciona el Diario en la semana apropiada del curso destino:
-    // semana actual si hoy cae dentro del curso, o primera/última semana en caso contrario.
     function switchCourse(id) {
         if (!appData.courseData[id]) return;
         appData.currentCourseId = id;
@@ -1568,7 +1413,6 @@
         updateAllGroupSelects();
         showTab(activeTab);
     }
-    // Elimina un curso (no se puede eliminar el único existente).
     function deleteCourse(id) {
         if (appData.courses.length <= 1) { alert('No se puede eliminar el único curso existente.'); return; }
         const course = appData.courses.find(c => c.id === id);
@@ -1589,7 +1433,6 @@
         diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId); diarioDayOffset = 0;
         showTab(activeTab);
     }
-    // Rellena el <select> de cursos de la cabecera conservando la selección.
     function populateCourseSelector() {
         const sel = document.getElementById('courseSelector');
         if (!sel) return;
@@ -1602,13 +1445,11 @@
         const sel = document.getElementById('courseSelector');
         if (sel && sel.value) switchCourse(sel.value);
     }
-    // === Modal de gestión de cursos ===
     function openCourseManager() { document.getElementById('courseManagerModal').classList.remove('hidden'); renderCourseList(); updateCreateCourseDefaultYear(); }
     function closeCourseManager() { document.getElementById('courseManagerModal').classList.add('hidden'); }
     function updateCreateCourseDefaultYear() {
         const inp = document.getElementById('newCourseStartYear');
         if (!inp) return;
-        // Por defecto: el año de inicio del siguiente curso tras el último existente.
         const maxEnd = appData.courses.reduce((m, c) => Math.max(m, c.endYear), 0);
         const today = new Date();
         const todayCourse = getCourseForDate(today);
@@ -1656,13 +1497,10 @@
         alert('Curso ' + course.name + ' creado y activado.');
     }
 
-    // === Carga/guardado (sobre appData) ===
-    // Migra el formato antiguo (un único `data` sin cursos) al nuevo sobre multi-curso.
     function migrateOldFormat(oldData) {
         const today = new Date();
         const { startYear, endYear } = getCourseForDate(today);
         const course = buildCourseObject(startYear);
-        // Asegurar colecciones en oldData
         const slice = {
             groups: oldData.groups || [],
             students: oldData.students || [],
@@ -1683,14 +1521,12 @@
                     appData = parsed;
                     normalizeAppData();
                 } else {
-                    // Formato antiguo → migrar
                     appData = migrateOldFormat(parsed);
                     normalizeAppData();
                     saveDataLocal();
                 }
             } catch(e) {}
         }
-        // Si no hay nada, crear el curso por defecto basado en hoy
         if (!appData.courses.length) {
             const today = new Date();
             const { startYear } = getCourseForDate(today);
@@ -1706,12 +1542,9 @@
     function saveData() { saveDataLocal(); saveDataFirebase(); }
     function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
 
-    // Detectar si estamos en modo móvil/tablet (pantalla < 1024px)
     function isMobileMode() { return window.innerWidth < 1024; }
 
     // ==================== TEMA DÍA/NOCHE ====================
-    // Modos: 'auto' (sincronizado con la hora del sistema: 20:00–8:00 = noche),
-    // 'day' y 'night'. La elección se guarda y el modo auto se reevalúa cada minuto.
     let themeMode = 'auto';
     try { themeMode = localStorage.getItem('tec4_theme') || 'auto'; } catch (e) {}
 
@@ -1745,12 +1578,9 @@
             ? (dark ? 'automático — noche (desde las 20:00)' : 'automático — día (hasta las 20:00)')
             : dark ? 'modo noche fijo' : 'modo día fijo') + '. Pulsa para cambiar.';
     }
-    // Reevalúa el modo auto cada minuto (p. ej. al cruzar las 20:00 con la app abierta)
     setInterval(applyTheme, 60000);
 
     // ==================== DÍAS NO LECTIVOS ====================
-    // Se guardan por curso en data.nonTeachingDays con forma
-    // { 'YYYY-MM-DD': { categorias: [...], detalle: '' } } y sincronizan con Firebase.
     function getNonTeachingDay(dateStr) { return (data.nonTeachingDays || {})[dateStr] || null; }
     function updateNonTeachingInfo() {
         const el = document.getElementById('nonTeachingInfo');
@@ -1765,8 +1595,6 @@
         r.onload = function(e) {
             try {
                 const j = JSON.parse(e.target.result);
-                // Acepta el formato exportado por "Gestión de Asuntos Propios"
-                // ({ dias: [...] }) o directamente un array de días.
                 const dias = Array.isArray(j) ? j : (j && Array.isArray(j.dias) ? j.dias : null);
                 if (!dias) { alert('El JSON no contiene la lista de días (campo "dias").'); return; }
                 let added = 0, skipped = 0;
@@ -1805,14 +1633,11 @@
         document.querySelectorAll('.tab-content').forEach(e => e.classList.add('hidden'));
         const tabEl = document.getElementById('tab-'+t);
         if (tabEl) tabEl.classList.remove('hidden');
-        // Actualizar estado activo de los botones de la navbar (solo visible en desktop)
         document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('tab-active'); b.classList.add('text-slate-500'); });
         const ab = document.querySelector(`.tab-btn[data-tab="${t}"]`);
         if (ab) { ab.classList.add('tab-active'); ab.classList.remove('text-slate-500'); }
-        // Botón flotante Inicio: visible solo en móvil/tablet y cuando NO estamos en la pantalla de inicio
         const fab = document.getElementById('homeFab');
         if (fab) fab.classList.toggle('hidden', t === 'inicio');
-        // Scroll al inicio de la página al cambiar de pantalla
         window.scrollTo({ top: 0, behavior: 'smooth' });
         if(t==='diario') { renderDiario(); }
         if(t==='alumnado') { renderGroups(); renderStudents(); }
@@ -1821,12 +1646,10 @@
         if(t==='saberes') { populateSaberesGroupFilter(); renderSaberesDashboard(); }
         if(t==='criterios') { populateCriteriaGroupFilter(); renderCriteriaDashboard(); }
         if(t==='informes') { populateInformesGroupFilter(); renderInformes(); }
+        renderClassNotification();
     }
-    // Volver a la pantalla de inicio (modo móvil/tablet)
     function goHome() { showTab('inicio'); }
 
-    // Acordeones: como máximo una tarjeta abierta en todo momento.
-    // Volver a pulsar la cabecera de la tarjeta abierta la repliega.
     function toggleAccordion(id) {
         const el = document.getElementById(id);
         if (!el) return;
@@ -1835,18 +1658,14 @@
         if (!wasOpen) el.classList.add('open');
     }
 
-    // Al cambiar el tamaño de ventana y cruzar el breakpoint 1024px, cambiar de modo
     let _wasMobile = isMobileMode();
     let _wasDayView = isDiarioDayMode();
     window.addEventListener('resize', function() {
         const _isMob = isMobileMode();
         if (_isMob !== _wasMobile) {
             _wasMobile = _isMob;
-            // Si pasamos a desktop → mostrar Diario (la navbar gestiona la navegación)
-            // Si pasamos a móvil → mostrar pantalla de inicio
             showTab(_isMob ? 'inicio' : 'diario');
         }
-        // Cruzar el umbral de vista diaria (768px): re-renderizar el Diario si está visible
         const _isDay = isDiarioDayMode();
         if (_isDay !== _wasDayView) {
             _wasDayView = _isDay;
@@ -1894,15 +1713,81 @@
         const gh = document.getElementById('accGruposHint');
         if (gh) gh.textContent = gs.length ? ` · ${gs.length} grupo(s)` : '';
     }
-    function updateAllGroupSelects() { const gs=data.groups||[]; ['studentGrupo','senecaGrupo','filterStudentGrupo','scheduleGrupoSelect'].forEach(id => { const el=document.getElementById(id); if(!el) return; const cv=el.value; const isF=id.includes('Filter'); el.innerHTML=`<option value="">${isF?'Todos':'Selecciona'}</option>`; gs.forEach(g => el.innerHTML+=`<option value="${g.id}">${escHtml(g.name)}</option>`); // Si el grupo seleccionado dejó de existir, vuelve al valor por defecto
- el.value=(cv && gs.some(g=>g.id===cv)) ? cv : ''; }); }
+    function updateAllGroupSelects() { const gs=data.groups||[]; ['studentGrupo','senecaGrupo','filterStudentGrupo'].forEach(id => { const el=document.getElementById(id); if(!el) return; const cv=el.value; const isF=id.includes('Filter'); el.innerHTML=`<option value="">${isF?'Todos':'Selecciona'}</option>`; gs.forEach(g => el.innerHTML+=`<option value="${g.id}">${escHtml(g.name)}</option>`); el.value=(cv && gs.some(g=>g.id===cv)) ? cv : ''; }); }
 
-    // HORARIO
-    function renderSchedule() { let h=''; const sch=data.schedule||{}; const gs=data.groups||[]; HOURS.forEach((hora,hi)=>{ h+=`<tr class="border-b border-slate-700/30 hover:bg-slate-700/30"><td class="p-2 font-medium text-slate-300 text-xs">${hora}</td>`; DAYS.forEach((day,di)=>{ const k=`${di}-${hi}`; const grp=sch[k]; const gn=grp?gs.find(g=>g.id===grp)?.name||'':''; h+=`<td class="p-1 text-center hover:bg-cyan-500/10"><div class="min-h-[40px] flex items-center justify-center gap-1">${gn?`<span class="bg-cyan-500/15 text-cyan-400 rounded px-2 py-1 text-xs font-medium cursor-pointer" onclick="openScheduleModal('${k}')">${gn}</span>`:`<button onclick="openScheduleModal('${k}')" class="text-slate-500 hover:text-cyan-400 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></button>`}</div></td>`; }); h+='</tr>'; }); document.getElementById('scheduleBody').innerHTML=h; }
-    function openScheduleModal(key) { currentScheduleCell=key; const [d,h]=key.split('-'); const sch=data.schedule||{}; document.getElementById('scheduleModalTitle').textContent=`${DAYS[d]} - ${HOURS[h]}`; document.getElementById('scheduleGrupoSelect').value=sch[key]||''; document.getElementById('scheduleDeleteBtn').classList.toggle('hidden', !sch[key]); document.getElementById('scheduleModal').classList.remove('hidden'); }
+    // ==================== HORARIO (multi-grupo) ====================
+    // El horario admite 1 grupo (string) o varios (array) por franja.
+    // getScheduleGroups() normaliza ambos formatos a un array.
+    function getScheduleGroups(key) {
+        const v = (data && data.schedule) ? data.schedule[key] : null;
+        if (!v) return [];
+        if (Array.isArray(v)) return v.slice();
+        if (typeof v === 'string') return [v];
+        return [];
+    }
+    function renderSchedule() {
+        let h='';
+        const gs=data.groups||[];
+        HOURS.forEach((hora,hi)=>{
+            h+=`<tr class="border-b border-slate-700/30 hover:bg-slate-700/30"><td class="p-2 font-medium text-slate-300 text-xs">${hora}</td>`;
+            DAYS.forEach((day,di)=>{
+                const k=`${di}-${hi}`;
+                const groupIds = getScheduleGroups(k);
+                let inner = '';
+                if (groupIds.length === 0) {
+                    inner = `<button onclick="openScheduleModal('${k}')" class="text-slate-500 hover:text-cyan-400 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></button>`;
+                } else {
+                    inner = groupIds.map(gid => {
+                        const g = gs.find(x => x.id === gid);
+                        const name = g ? g.name : '(?)';
+                        return `<span class="bg-cyan-500/15 text-cyan-400 rounded px-2 py-1 text-xs font-medium cursor-pointer" onclick="openScheduleModal('${k}')">${escHtml(name)}</span>`;
+                    }).join('');
+                }
+                h+=`<td class="p-1 text-center hover:bg-cyan-500/10"><div class="min-h-[40px] flex items-center justify-center gap-1 flex-wrap">${inner}</div></td>`;
+            });
+            h+='</tr>';
+        });
+        document.getElementById('scheduleBody').innerHTML=h;
+    }
+    function renderScheduleGroupCheckboxes(preSelected) {
+        const c = document.getElementById('scheduleGroupCheckboxes');
+        if (!c) return;
+        const groups = data.groups || [];
+        const sel = Array.isArray(preSelected) ? preSelected : (preSelected ? [preSelected] : []);
+        if (!groups.length) {
+            c.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">Sin grupos definidos. Crea grupos primero.</p>';
+            return;
+        }
+        c.innerHTML = groups.map(g =>
+            `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-700/40 cursor-pointer">
+                <input type="checkbox" class="schedule-grp-chk rounded border-slate-600 text-cyan-400" value="${g.id}" ${sel.includes(g.id) ? 'checked' : ''}>
+                <span class="text-sm text-slate-200">${escHtml(g.name)}</span>
+            </label>`
+        ).join('');
+    }
+    function openScheduleModal(key) {
+        currentScheduleCell=key;
+        const [d,h]=key.split('-');
+        const sch=data.schedule||{};
+        document.getElementById('scheduleModalTitle').textContent=`${DAYS[d]} - ${HOURS[h]}`;
+        const v = sch[key];
+        renderScheduleGroupCheckboxes(v);
+        document.getElementById('scheduleDeleteBtn').classList.toggle('hidden', !v);
+        document.getElementById('scheduleModal').classList.remove('hidden');
+    }
     function deleteScheduleFromModal() { if(!currentScheduleCell) return; delete data.schedule[currentScheduleCell]; saveData(); renderSchedule(); closeScheduleModal(); }
     function closeScheduleModal() { document.getElementById('scheduleModal').classList.add('hidden'); currentScheduleCell=null; }
-    function saveSchedule() { if(currentScheduleCell) { const v=document.getElementById('scheduleGrupoSelect').value; if(v) data.schedule[currentScheduleCell]=v; else delete data.schedule[currentScheduleCell]; saveData(); renderSchedule(); } closeScheduleModal(); }
+    function saveSchedule() {
+        if(currentScheduleCell) {
+            const checked = Array.from(document.querySelectorAll('.schedule-grp-chk:checked')).map(c => c.value);
+            if (checked.length === 0) delete data.schedule[currentScheduleCell];
+            else if (checked.length === 1) data.schedule[currentScheduleCell] = checked[0];
+            else data.schedule[currentScheduleCell] = checked;
+            saveData();
+            renderSchedule();
+        }
+        closeScheduleModal();
+    }
 
     // ALUMNADO
     function addStudent(e) { e.preventDefault(); const n=document.getElementById('studentName').value.trim(); const g=document.getElementById('studentGrupo').value; if(!n||!g) return; data.students.push({id:generateId(), name:n, groupId:g}); saveData(); document.getElementById('studentName').value=''; renderStudents(); renderGroups(); }
@@ -1915,45 +1800,36 @@
         if (!groupId) { alert('Selecciona un grupo.'); return; }
         if (!fileInput.files.length) { alert('Selecciona un archivo.'); return; }
         const file = fileInput.files[0];
-
         if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
             importExcel(file, groupId);
         } else {
             importCsv(file, groupId);
         }
     }
-
     function importExcel(file, groupId) {
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
                 const workbook = XLSX.read(e.target.result, { type: 'array' });
-                // Try to find a sheet with students - usually first sheet or named 'Alumnos'
                 let sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('alumno')) || workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-                
                 let imported = 0;
                 jsonData.forEach(row => {
-                    // Find the name column - could be "Alumno", "Nombre", "Apellido", etc.
                     let fullName = '';
                     const keys = Object.keys(row);
-                    const nameKey = keys.find(k => k.toLowerCase().includes('alumno')) || 
+                    const nameKey = keys.find(k => k.toLowerCase().includes('alumno')) ||
                                     keys.find(k => k.toLowerCase().includes('nombre'));
-                    
                     if (nameKey && row[nameKey]) {
                         fullName = String(row[nameKey]).trim();
                     } else if (keys.length > 0) {
-                        // Try first column
                         fullName = String(row[keys[0]]).trim();
                     }
-                    
                     if (fullName && fullName.length > 2 && !data.students.find(s => s.name.toLowerCase() === fullName.toLowerCase() && s.groupId === groupId)) {
                         data.students.push({ id: generateId(), name: fullName, groupId });
                         imported++;
                     }
                 });
-                
                 saveData(); renderStudents(); renderGroups();
                 alert(`Se importaron ${imported} alumnos desde Excel.`);
                 document.getElementById('senecaFile').value = '';
@@ -1963,19 +1839,15 @@
         };
         reader.readAsArrayBuffer(file);
     }
-
     function importCsv(file, groupId) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            // Se elimina el BOM (EFBBBF) que Excel añade a los CSV UTF-8: si no,
-            // la primera celda queda "contaminada" y rompe la detección de cabecera.
             const lines = e.target.result.replace(/^\uFEFF/, '').split('\n').filter(l => l.trim());
             let imported = 0;
             let delimiter = '\t';
             if (!lines[0].includes('\t') && lines[0].includes(';')) delimiter = ';';
             else if (!lines[0].includes('\t') && lines[0].includes(',')) delimiter = ',';
             const startLine = (lines[0].toLowerCase().includes('alumno') || lines[0].toLowerCase().includes('nombre')) ? 1 : 0;
-            
             for (let i = startLine; i < lines.length; i++) {
                 const cols = lines[i].split(delimiter).map(c => c.trim().replace(/"/g, ''));
                 let fullName = cols.length >= 2 ? `${cols[0]}, ${cols[1]}` : (cols[0] || '');
@@ -2009,8 +1881,6 @@
     function selectSaberSubbloque(sb) { selectedSaberSubbloque=sb; renderSaberSubbloqueSelector(); renderSaberItemsSelector(); document.getElementById('saberItemsContainer').classList.remove('hidden'); updateSaberPreview(); }
     function renderSaberItemsSelector() { const c=document.getElementById('saberItemsSelector'); const sb=SABERES[selectedSaberBloque]?.subbloques[selectedSaberSubbloque]; if(!sb) return; c.innerHTML=sb.items.map(i=>{ const ck=selectedSaberes.includes(i.id); return `<label class="checkbox-label flex items-start gap-2 p-2 rounded ${ck?'bg-cyan-500/10 border border-cyan-500/20':'border border-transparent'}"><input type="checkbox" value="${i.id}" ${ck?'checked':''} onchange="toggleSaberItem('${i.id}')" class="mt-0.5 rounded border-slate-600/40 text-cyan-400"><span class="text-xs text-slate-300"><strong>${i.nombre}</strong> ${i.texto}</span></label>`; }).join(''); }
     function toggleSaberItem(id) { if(selectedSaberes.includes(id)) selectedSaberes=selectedSaberes.filter(i=>i!==id); else selectedSaberes.push(id); renderSaberItemsSelector(); updateSaberPreview(); }
-    // Busca un saber por su id recorriendo todos los bloques y sub-bloques.
-    // Centraliza la lógica que antes estaba duplicada en updateSaberPreview y getSelectedSaberObjects.
     function findSaberById(id) {
         for (const b of Object.values(SABERES)) {
             for (const sb of Object.values(b.subbloques)) {
@@ -2022,7 +1892,7 @@
     function updateSaberPreview() { const p=document.getElementById('saberSelectedPreview'); const l=document.getElementById('saberSelectedList'); if(!selectedSaberes.length) { p.classList.add('hidden'); return; } p.classList.remove('hidden'); l.innerHTML=selectedSaberes.map(id=>{ const s=findSaberById(id); return s?`<span class="badge-saberes badge-saberes-worked">${s.nombre}</span>`:''; }).join(''); }
     function getSelectedSaberObjects() { return selectedSaberes.map(findSaberById).filter(Boolean); }
 
-    // CALENDARIO-MES (compartido)
+    // CALENDARIO-MES
     const CAL_MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     const CAL_DAY_SHORT = ['Lun','Mar','Mié','Jue','Vie'];
 
@@ -2032,7 +1902,6 @@
         const dd = String(d.getDate()).padStart(2, '0');
         return `${y}-${m}-${dd}`;
     }
-
     function getMondayOfWeek(date) {
         const d = new Date(date);
         d.setHours(0,0,0,0);
@@ -2041,8 +1910,7 @@
         return d;
     }
 
-    // DIARIO — Schedule-based 4-week calendar
-    // Paleta de colores por grupo (índice cíclico)
+    // DIARIO
     const GRP_COLORS = [
         { bg: 'rgba(139, 92, 246, 0.10)', border: 'rgba(139, 92, 246, 0.22)', text: '#a78bfa' },
         { bg: 'rgba(6, 182, 212, 0.10)', border: 'rgba(6, 182, 212, 0.22)', text: '#22d3ee' },
@@ -2051,24 +1919,20 @@
         { bg: 'rgba(236, 72, 153, 0.10)', border: 'rgba(236, 72, 153, 0.22)', text: '#f472b6' },
         { bg: 'rgba(99, 102, 241, 0.10)', border: 'rgba(99, 102, 241, 0.22)', text: '#818cf8' },
     ];
-    // Índice de color por groupId (se asigna la primera vez que se renderiza)
     let grpColorMap = {};
     function getGroupColor(groupId) {
         if (!(groupId in grpColorMap)) grpColorMap[groupId] = Object.keys(grpColorMap).length % GRP_COLORS.length;
         return GRP_COLORS[grpColorMap[groupId]];
     }
 
-    let diarioModalCell = null; // { dateStr, dayIdx, hourIdx, groupId }
+    let diarioModalCell = null;
     let editingDiarioId = null;
-    let diarioWeekOffset = 0; // 0 = semana actual; -N = N semanas atrás; +N = N semanas adelante (planificación)
-    let diarioDayOffset = 0; // 0..4 = día de la semana mostrado (solo se usa en la vista diaria de pantallas pequeñas)
+    let diarioWeekOffset = 0;
+    let diarioDayOffset = 0;
 
-    // Vista diaria: en pantallas pequeñas (<768px) el calendario semanal se
-    // sustituye por una vista de un solo día, más legible en móvil.
     function isDiarioDayMode() { return window.innerWidth < 768; }
-    let diarioActTagFilter = null; // etiqueta activa para filtrar el <select> de actividad del modal de diario
+    let diarioActTagFilter = null;
 
-    // === Navegación entre semanas del Diario ===
     function navPrevWeek() {
         if (isDiarioDayMode()) {
             if (diarioDayOffset > 0) diarioDayOffset--; else { diarioWeekOffset -= 1; diarioDayOffset = 4; }
@@ -2088,10 +1952,6 @@
     function navToCurrentWeek() { diarioWeekOffset = 0; diarioDayOffset = 0; renderDiario(); }
     function jumpToDiarioDay(d) { diarioDayOffset = Math.min(Math.max(d, 0), 4); renderDiario(); }
 
-    // === Período estival no lectivo (1 julio – 14 septiembre) ===
-    // Estas semanas no aparecen en histórico, planificación ni semana actual.
-    // Una semana es "de verano" si está enteramente dentro del período estival:
-    // su lunes es posterior al 30 de junio Y su viernes es anterior al 15 de septiembre.
     function isWeekInSummer(monday) {
         const friday = new Date(monday);
         friday.setDate(monday.getDate() + 4);
@@ -2101,8 +1961,6 @@
         const sept15 = new Date(y, 8, 15, 0, 0, 0, 0);
         return monday > june30 && friday < sept15;
     }
-    // Comprueba si una fecha concreta cae en el período estival no lectivo
-    // (1 de julio – 14 de septiembre, inclusive). Basado en mes/día, sin parsear Date.
     function isDateInSummer(dateStr) {
         if (!dateStr) return false;
         const parts = dateStr.split('-');
@@ -2110,16 +1968,12 @@
         const d = parseInt(parts[2], 10);
         return m === 7 || m === 8 || (m === 9 && d <= 14);
     }
-    // Lunes de la primera semana del curso (semana que contiene el 15 de septiembre).
     function courseStartMonday(course) {
         return getMondayOfWeek(new Date(course.startDate + 'T00:00:00'));
     }
-    // Lunes de la última semana del curso (semana que contiene el 30 de junio).
     function courseEndMonday(course) {
         return getMondayOfWeek(new Date(course.endDate + 'T00:00:00'));
     }
-    // Cambia el curso activo sin renderizar ni resetear diarioWeekOffset.
-    // Usado por normalizeViewWeek para saltar de curso al cruzar el verano.
     function switchCourseSilent(id) {
         if (!appData.courseData[id]) return;
         appData.currentCourseId = id;
@@ -2130,66 +1984,38 @@
         populateCourseSelector();
         updateAllGroupSelects();
     }
-    // Normaliza diarioWeekOffset para que la semana mostrada nunca caiga en verano.
-    // Si la semana calculada cae en verano, salta al curso más cercano (anterior o siguiente)
-    // y ajusta el offset para mostrar su semana límite (30 jun o 15 sept).
-    // Si la semana cae dentro de otro curso distinto al activo, cambia a ese curso.
     function normalizeViewWeek() {
         const today = new Date(); today.setHours(0,0,0,0);
         const currentMonday = getMondayOfWeek(today);
         const viewMonday = new Date(currentMonday);
         viewMonday.setDate(viewMonday.getDate() + (diarioWeekOffset * 7));
         viewMonday.setHours(0,0,0,0);
-
-        // Si no está en verano, verificar que esté dentro del curso activo.
         if (!isWeekInSummer(viewMonday)) {
             const course = appData.courses.find(c => c.id === appData.currentCourseId);
             if (course) {
                 const s = courseStartMonday(course);
                 const e = courseEndMonday(course);
                 if (viewMonday < s || viewMonday > e) {
-                    // Fuera del curso activo: ¿pertenece a otro curso?
-                    const target = appData.courses.find(c => {
-                        return viewMonday >= courseStartMonday(c) && viewMonday <= courseEndMonday(c);
-                    });
-                    if (target && target.id !== appData.currentCourseId) {
-                        switchCourseSilent(target.id);
-                    }
+                    const target = appData.courses.find(c => viewMonday >= courseStartMonday(c) && viewMonday <= courseEndMonday(c));
+                    if (target && target.id !== appData.currentCourseId) switchCourseSilent(target.id);
                 }
             }
             return;
         }
-
-        // La semana cae en verano. Encontrar el curso más cercano (anterior o siguiente).
-        const nextCourse = appData.courses
-            .filter(c => courseStartMonday(c) > viewMonday)
-            .sort((a, b) => courseStartMonday(a) - courseStartMonday(b))[0];
-        const prevCourse = appData.courses
-            .filter(c => courseEndMonday(c) < viewMonday)
-            .sort((a, b) => courseEndMonday(b) - courseEndMonday(a))[0];
-
+        const nextCourse = appData.courses.filter(c => courseStartMonday(c) > viewMonday).sort((a, b) => courseStartMonday(a) - courseStartMonday(b))[0];
+        const prevCourse = appData.courses.filter(c => courseEndMonday(c) < viewMonday).sort((a, b) => courseEndMonday(b) - courseEndMonday(a))[0];
         let targetMonday, targetCourse;
         if (nextCourse && prevCourse) {
             const distNext = courseStartMonday(nextCourse) - viewMonday;
             const distPrev = viewMonday - courseEndMonday(prevCourse);
             if (distNext <= distPrev) { targetMonday = courseStartMonday(nextCourse); targetCourse = nextCourse; }
             else { targetMonday = courseEndMonday(prevCourse); targetCourse = prevCourse; }
-        } else if (nextCourse) {
-            targetMonday = courseStartMonday(nextCourse); targetCourse = nextCourse;
-        } else if (prevCourse) {
-            targetMonday = courseEndMonday(prevCourse); targetCourse = prevCourse;
-        } else {
-            return; // No hay cursos válidos a los que saltar
-        }
-
+        } else if (nextCourse) { targetMonday = courseStartMonday(nextCourse); targetCourse = nextCourse; }
+        else if (prevCourse) { targetMonday = courseEndMonday(prevCourse); targetCourse = prevCourse; }
+        else { return; }
         diarioWeekOffset = Math.round((targetMonday - currentMonday) / (7 * 24 * 60 * 60 * 1000));
-        if (targetCourse.id !== appData.currentCourseId) {
-            switchCourseSilent(targetCourse.id);
-        }
+        if (targetCourse.id !== appData.currentCourseId) switchCourseSilent(targetCourse.id);
     }
-
-    // Salto directo a una semana por su offset relativo a la semana actual.
-    // Cierra el desplegable "Ir a…" tras saltar.
     function jumpToWeek(offset) {
         diarioWeekOffset = offset;
         diarioDayOffset = 0;
@@ -2197,13 +2023,10 @@
         if (d) d.open = false;
         renderDiario();
     }
-    // Construye la lista de semanas dentro del rango del curso activo (15/09 → 30/06).
-    // Cada semana es clicable y salta directamente a ella. Agrupado por mes.
     function renderWeekJumpPicker() {
         const panel = document.getElementById('weekJumpPicker');
         if (!panel) return;
         const course = appData.courses.find(c => c.id === appData.currentCourseId);
-        // Si no hay curso, usar un rango amplio alrededor de hoy (±6 meses).
         let startStr, endStr;
         if (course) { startStr = course.startDate; endStr = course.endDate; }
         else {
@@ -2214,42 +2037,30 @@
         }
         const start = new Date(startStr + 'T00:00:00');
         const end = new Date(endStr + 'T00:00:00');
-        // Ajustar al lunes de la semana del start (o el start mismo si ya es lunes o posterior en su semana)
         const startMonday = getMondayOfWeek(start);
         const today = new Date(); today.setHours(0,0,0,0);
-        const todayStr = toLocalDateStr(today);
         const currentMonday = getMondayOfWeek(today);
-
-        // Recopilar semanas
         const weeks = [];
         let cursor = new Date(startMonday);
-        // Safety cap to avoid infinite loops on bad dates
         let guard = 0;
         while (cursor <= end && guard < 200) {
-            // Filtrar semanas de verano (1 jul – 14 sept) por seguridad,
-            // aunque el rango del curso (15 sept – 30 jun) ya las excluye.
             if (!isWeekInSummer(cursor)) {
                 const friday = new Date(cursor); friday.setDate(cursor.getDate() + 4);
-                const cursorStr = toLocalDateStr(cursor);
                 const offset = Math.round((cursor - currentMonday) / (7 * 24 * 60 * 60 * 1000));
                 const isCurrent = offset === 0;
                 const isViewing = offset === diarioWeekOffset;
-                weeks.push({ monday: new Date(cursor), friday, offset, isCurrent, isViewing, cursorStr });
+                weeks.push({ monday: new Date(cursor), friday, offset, isCurrent, isViewing });
             }
             cursor = new Date(cursor); cursor.setDate(cursor.getDate() + 7);
             guard++;
         }
-
         if (!weeks.length) { panel.innerHTML = '<div class="week-jump-empty">Sin semanas disponibles en el curso.</div>'; return; }
-
-        // Agrupar por mes (clave YYYY-MM)
         const byMonth = {};
         weeks.forEach(w => {
             const key = w.monday.getFullYear() + '-' + String(w.monday.getMonth() + 1).padStart(2, '0');
             if (!byMonth[key]) byMonth[key] = [];
             byMonth[key].push(w);
         });
-
         let html = '';
         Object.keys(byMonth).sort().forEach(key => {
             const [y, m] = key.split('-').map(Number);
@@ -2279,8 +2090,6 @@
 
     function openDiarioModal(dateStr, dayIdx, hourIdx, groupId) {
         const existingCheck = findEntryForCell(dateStr, hourIdx + 1, groupId);
-        // En días no lectivos (JSON importado) no se permiten anotaciones nuevas;
-        // las entradas ya existentes sí se pueden consultar/editar.
         if (!existingCheck) {
             const ntd = getNonTeachingDay(dateStr);
             if (ntd) {
@@ -2293,8 +2102,6 @@
         diarioModalCell = { dateStr, dayIdx, hourIdx, groupId: groupId || '' };
         const existing = existingCheck;
         editingDiarioId = existing ? existing.id : null;
-
-        // Info bar
         const info = document.getElementById('diarioModalInfo');
         const group = groupId ? data.groups.find(g => g.id === groupId) : null;
         const dayName = DAYS[dayIdx];
@@ -2306,30 +2113,19 @@
         else infoHtml += `<span class="bg-emerald-500/10 text-emerald-400 rounded-lg px-2.5 py-0.5 text-xs">Nota libre</span>`;
         infoHtml += `</div>`;
         info.innerHTML = infoHtml;
-
-        // Reset filtro de etiquetas y poblar selector de actividad
         diarioActTagFilter = null;
         renderDiarioActFilterBar();
         populateDiarioActividadSelect(existing ? existing.actividad : null);
-
-        // Fill form
         document.getElementById('diarioContenido').value = existing ? (existing.contenido || '') : '';
         document.getElementById('diarioObs').value = existing ? (existing.observaciones || '') : '';
-
-        // Saberes
         selectedSaberes = existing ? [...(existing.saberes || [])] : [];
-        initSaberSelector(existing); // pass existing flag to preserve saberes on edit
-
-        // Title & delete button
+        initSaberSelector(existing);
         document.getElementById('diarioModalTitle').textContent = existing ? 'Editar entrada' : 'Nueva entrada';
         document.getElementById('diarioDeleteBtn').classList.toggle('hidden', !existing);
-
         document.getElementById('diarioModal').classList.remove('hidden');
         setTimeout(() => document.getElementById('diarioContenido').focus(), 100);
     }
 
-    // === Filtro por etiquetas para el selector de actividad del modal de diario ===
-    // Renderiza los chips de etiqueta + "Todas". Usa tagStyle para colorear cada etiqueta.
     function renderDiarioActFilterBar() {
         const c = document.getElementById('diarioActTagFilterBar');
         if (!c) return;
@@ -2343,13 +2139,10 @@
     function setDiarioActTagFilter(tag) {
         diarioActTagFilter = tag;
         renderDiarioActFilterBar();
-        // Re-poblar el <select> respetando el filtro, conservando la selección actual si sigue visible
         const sel = document.getElementById('diarioActividad');
         const currentValue = sel.value;
         populateDiarioActividadSelect(currentValue);
     }
-    // Llena el <select> de actividad con las actividades que cumplen el filtro de etiqueta.
-    // Si selectedActId se pasa y su actividad no cumple el filtro, se selecciona "Sin actividad".
     function populateDiarioActividadSelect(selectedActId) {
         const sel = document.getElementById('diarioActividad');
         if (!sel) return;
@@ -2358,7 +2151,6 @@
         let opts = '<option value="">Sin actividad</option>';
         acts.forEach(ac => { opts += `<option value="${ac.id}">${ac.title}</option>`; });
         sel.innerHTML = opts;
-        // Restaurar selección si sigue presente
         if (selectedActId && acts.some(a => a.id === selectedActId)) {
             sel.value = selectedActId;
         } else {
@@ -2372,14 +2164,12 @@
         editingDiarioId = null;
         initSaberSelector();
     }
-
     function saveDiarioModal() {
         if (!diarioModalCell) return;
         const contenido = document.getElementById('diarioContenido').value.trim();
         const actividad = document.getElementById('diarioActividad').value;
         const observaciones = document.getElementById('diarioObs').value.trim();
         const saberes = getSelectedSaberObjects().map(s => s.id);
-
         if (editingDiarioId) {
             const entry = data.diario.find(e => e.id === editingDiarioId);
             if (entry) {
@@ -2403,28 +2193,60 @@
         saveData();
         closeDiarioModal();
         renderDiario();
+        renderClassNotification();
     }
-
     function deleteDiarioFromModal() {
         if (!editingDiarioId) return;
         data.diario = data.diario.filter(d => d.id !== editingDiarioId);
         saveData();
         closeDiarioModal();
         renderDiario();
+        renderClassNotification();
     }
 
-    // Construye la celda del calendario (compartida por la vista semanal y la diaria)
+    // Construye la celda del calendario (multi-grupo soportado)
     function buildDiarioCellHTML(dateStr, di, hi, todayStr, opts) {
         opts = opts || {};
         const isToday = dateStr === todayStr;
-        // Una entrada es "futura" (planificación) si su fecha es estrictamente posterior a hoy.
         const isFutureDate = dateStr > todayStr;
-        // En verano (1 jul – 14 sept) no se muestra el horario del profesor.
         const dateIsSummer = isDateInSummer(dateStr);
         const schedKey = `${di}-${hi}`;
-        const groupId = dateIsSummer ? '' : (data.schedule[schedKey] || '');
+        const groupIds = dateIsSummer ? [] : getScheduleGroups(schedKey);
+        const ntd = dateIsSummer ? null : getNonTeachingDay(dateStr);
+
+        if (dateIsSummer) {
+            return `<div class="scell scell-summer"><span class="opacity-30">—</span></div>`;
+        }
+
+        // Multi-grupo: apila mini-celdas
+        if (groupIds.length >= 2) {
+            let cls = 'scell-multi';
+            if (isToday) cls += ' scell-today';
+            if (ntd) cls += ' scell-nonlectivo';
+            let h = `<div class="${cls}">`;
+            groupIds.forEach(gid => {
+                const g = data.groups.find(x => x.id === gid);
+                if (!g) return;
+                const entry = findEntryForCell(dateStr, hi + 1, gid);
+                const gc = getGroupColor(gid);
+                const isFutureEntry = entry && isFutureDate;
+                let innerCls = 'scell-mini';
+                if (isFutureEntry) innerCls += ' scell-future-entry';
+                const tip = buildCellTip(dateStr, di, hi, gid, entry, ntd);
+                let attrs = `data-fecha="${dateStr}" data-di="${di}" data-hi="${hi}" data-grupo="${gid}" onclick="onDiarioCellClick(event,this)"`;
+                if (tip) attrs += ` data-tip="${escHtml(tip).replace(/\n/g, '&#10;')}"`;
+                let inner = `<span class="scell-mini-name">${escHtml(g.name)}</span>`;
+                if (entry) inner += `<span class="scell-mini-check" style="color:${gc.text}">✓</span>`;
+                h += `<div class="${innerCls}" style="background:${gc.bg};border-color:${gc.border};color:${gc.text};" ${attrs}>${inner}</div>`;
+            });
+            h += `</div>`;
+            return h;
+        }
+
+        // 0 o 1 grupo: celda única (comportamiento original)
+        const groupId = groupIds[0] || '';
         const group = groupId ? data.groups.find(g => g.id === groupId) : null;
-        const entry = dateIsSummer ? null : findEntryForCell(dateStr, hi + 1, groupId);
+        const entry = findEntryForCell(dateStr, hi + 1, groupId);
 
         let cls = 'scell';
         let inline = '';
@@ -2440,20 +2262,9 @@
             cls += ' scell-free';
         }
         if (isToday) cls += ' scell-today';
-        // Si la celda tiene entrada y la fecha es futura → marca de planificación parpadeante
         if (entry && isFutureDate) cls += ' scell-future-entry';
-        // Fechas estivales: atenuadas y no clickables
-        if (dateIsSummer) cls += ' scell-summer';
-        // Días no lectivos (JSON importado): marcados con 🚫 y sin anotaciones nuevas
-        const ntd = dateIsSummer ? null : getNonTeachingDay(dateStr);
         if (ntd) cls += ' scell-nonlectivo';
 
-        if (dateIsSummer) {
-            // Celda de verano: vacía, no clickable
-            return `<div class="${cls}" style="${inline}"><span class="opacity-30">—</span></div>`;
-        }
-
-        // Tooltip (hover / pulsación larga) para celdas con entrada o día no lectivo
         const tip = buildCellTip(dateStr, di, hi, groupId, entry, ntd);
         let attrs = `data-fecha="${dateStr}" data-di="${di}" data-hi="${hi}" data-grupo="${groupId}" onclick="onDiarioCellClick(event,this)"`;
         if (tip) attrs += ` data-tip="${escHtml(tip).replace(/\n/g, '&#10;')}"`;
@@ -2474,15 +2285,12 @@
         return `<div class="${cls}" style="${inline}" ${attrs}>${inner}</div>`;
     }
 
-    // Tarjeta de la vista diaria (pantallas pequeñas): un solo día con sus 6 horas
     function buildDiarioDayCard(monday, dayOffset, todayStr) {
         const cd = new Date(monday); cd.setDate(monday.getDate() + dayOffset);
         const dateStr = toLocalDateStr(cd);
         const isToday = dateStr === todayStr;
         const ntd = getNonTeachingDay(dateStr);
         const isFutureDay = dateStr > todayStr;
-        const isPastDay = dateStr < todayStr;
-
         let h = `<div class="glass week-card diario-day-view ${isToday ? 'current-week ring-1 ring-cyan-500/20' : ''} ${isFutureDay ? 'ring-1 ring-amber-500/30' : ''}">`;
         h += `<div class="week-header"><span class="text-sm font-semibold ${isToday ? 'text-cyan-400' : isFutureDay ? 'text-amber-400' : 'text-slate-300'}">${DAYS[dayOffset]} ${cd.getDate()} de ${CAL_MONTH_NAMES[cd.getMonth()]} ${cd.getFullYear()}</span>`;
         if (ntd) {
@@ -2492,8 +2300,6 @@
             h += `<span class="text-xs bg-cyan-500/15 text-cyan-400 px-2 py-0.5 rounded-full font-medium">Hoy</span>`;
         }
         h += `</div>`;
-
-        // Selector rápido de día de la semana
         h += `<div class="flex gap-1 justify-center flex-wrap pt-2">`;
         for (let d2 = 0; d2 < 5; d2++) {
             const c2 = new Date(monday); c2.setDate(monday.getDate() + d2);
@@ -2502,7 +2308,6 @@
             h += `<button onclick="jumpToDiarioDay(${d2})" class="px-3 py-1.5 rounded-lg text-xs font-medium border transition ${active ? 'tab-active border-transparent' : 'bg-white border-slate-200 text-slate-500 hover:bg-indigo-50 hover:border-indigo-200'} ${todayCls}">${CAL_DAY_SHORT[d2]} ${c2.getDate()}</button>`;
         }
         h += `</div>`;
-
         h += `<div class="p-3 space-y-2">`;
         for (let hi = 0; hi < HOURS.length; hi++) {
             h += `<div class="flex items-stretch gap-2">`;
@@ -2517,11 +2322,9 @@
     function renderDiario() {
         const grid = document.getElementById('diarioScheduleGrid');
         if (!grid) return;
-
         const hasGroups = data.groups.length > 0;
         const hasSchedule = Object.keys(data.schedule || {}).length > 0;
         let warnHtml = '';
-
         if (!hasGroups || !hasSchedule) {
             warnHtml += `<div class="diario-warn"><div class="diario-warn-title">⚠️ Configuración incompleta</div><div class="diario-warn-text">`;
             if (!hasGroups && !hasSchedule) {
@@ -2533,24 +2336,21 @@
             }
             warnHtml += `</div></div>`;
         }
-
-        // Find orphan entries (entries whose grupo doesn't exist or whose cell isn't in the schedule)
+        // Entradas huérfanas (grupo eliminado o slot no coincide)
         const orphans = data.diario.filter(e => {
             if (e.grupo) {
                 const groupExists = data.groups.some(g => g.id === e.grupo);
                 if (!groupExists) return true;
-                // Check if this grupo is assigned to the correct day/hour in the schedule
                 const dayIdx = e.fecha ? new Date(e.fecha + 'T00:00:00').getDay() : -1;
-                const monIdx = dayIdx === 0 ? 6 : dayIdx - 1; // Mon=0
+                const monIdx = dayIdx === 0 ? 6 : dayIdx - 1;
                 const hourIdx = parseInt(e.hora) - 1;
                 if (monIdx >= 0 && monIdx < 5 && hourIdx >= 0 && hourIdx < HOURS.length) {
                     const schedKey = `${monIdx}-${hourIdx}`;
-                    if (data.schedule[schedKey] !== e.grupo) return true;
+                    if (!getScheduleGroups(schedKey).includes(e.grupo)) return true;
                 }
             }
             return false;
         });
-
         if (orphans.length > 0) {
             warnHtml += `<div class="diario-warn" style="background:rgba(239,68,68,0.06);border-color:rgba(239,68,68,0.2)"><div class="diario-warn-title" style="color:#f87171">⚠️ ${orphans.length} entrada(s) sin horario coincidente</div><div class="diario-warn-text">Estas entradas no coinciden con el horario actual. Revisa el horario o elimina las entradas huérfanas.</div>`;
             orphans.forEach(o => {
@@ -2566,15 +2366,8 @@
         today.setHours(0,0,0,0);
         const todayStr = toLocalDateStr(today);
         const currentMonday = getMondayOfWeek(today);
-
-        // Normalizar el offset: si la semana calculada cae en verano (1 jul – 14 sept),
-        // saltar al curso más cercano y ajustar el offset. También cambia de curso
-        // automáticamente si la semana pertenece a otro curso distinto al activo.
         normalizeViewWeek();
 
-        // Semana mostrada = semana actual + diarioWeekOffset (permite navegar atrás/adelante).
-        // diarioWeekOffset === 0 → semana actual; > 0 → planificación futura; < 0 → histórico.
-        // En pantallas pequeñas (<768px) se muestra una vista diaria en lugar de la semana.
         const isDayMode = isDiarioDayMode();
         const viewDayOffset = Math.min(Math.max(diarioDayOffset, 0), 4);
         const viewMonday = new Date(currentMonday);
@@ -2587,7 +2380,6 @@
         const isCurrent = diarioWeekOffset === 0 && (!isDayMode || viewDayStr === todayStr);
         const isFuture = isDayMode ? viewDayStr > todayStr : diarioWeekOffset > 0;
 
-        // === Actualizar la barra de navegación ===
         const weekLabel = document.getElementById('diarioWeekLabel');
         if (weekLabel) {
             let labelTxt;
@@ -2603,7 +2395,6 @@
             weekLabel.textContent = labelTxt + badge;
             weekLabel.className = 'text-sm font-semibold text-center truncate ' + (isCurrent ? 'text-cyan-400' : isFuture ? 'text-amber-400' : 'text-slate-300');
         }
-        // Botón "Hoy": siempre visible. Se atenúa y deshabilita cuando ya estamos en la semana actual.
         const todayBtn = document.getElementById('diarioTodayBtn');
         if (todayBtn) {
             if (isCurrent) {
@@ -2614,32 +2405,24 @@
                 todayBtn.removeAttribute('aria-disabled');
             }
         }
-        // Refresca el desplegable "Ir a…" para que marque correctamente la semana en vista.
         renderWeekJumpPicker();
 
         let html = '';
-
-        // Vista diaria (pantallas pequeñas): tarjeta con el día seleccionado
         if (isDayMode) {
             html += buildDiarioDayCard(viewMonday, viewDayOffset, todayStr);
             grid.innerHTML = warnHtml + html;
             return;
         }
 
-        // Render de la única semana navegable
         const monday = viewMonday;
         const friday = viewFriday;
-
         html += `<div class="glass week-card ${isCurrent ? 'current-week ring-1 ring-cyan-500/20' : ''} ${isFuture ? 'ring-1 ring-amber-500/30' : ''}">`;
-        // Header
         html += `<div class="week-header">`;
         html += `<span class="text-sm font-semibold ${isCurrent ? 'text-cyan-400' : isFuture ? 'text-amber-400' : 'text-slate-300'}">${DAYS[0]} ${monday.getDate()} – ${DAYS[4]} ${friday.getDate()} ${CAL_MONTH_NAMES[friday.getMonth()]} ${monday.getFullYear() === friday.getFullYear() ? friday.getFullYear() : monday.getFullYear() + '/' + String(friday.getFullYear()).slice(-2)}</span>`;
         if (isCurrent) html += `<span class="text-xs bg-cyan-500/15 text-cyan-400 px-2 py-0.5 rounded-full font-medium">Esta semana</span>`;
         else if (isFuture) html += `<span class="text-xs bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-medium">📅 Planificación</span>`;
         else html += `<span class="text-xs bg-slate-700/50 text-slate-400 px-2 py-0.5 rounded-full font-medium">Histórico</span>`;
         html += `</div>`;
-
-        // Table
         html += `<div class="p-2"><table class="scell-table"><thead><tr>`;
         html += `<th></th>`;
         for (let di = 0; di < 5; di++) {
@@ -2652,11 +2435,9 @@
             html += `<th class="${thClasses}">${CAL_DAY_SHORT[di]} ${cd.getDate()}${thNtd ? ' <span title="' + escHtml(((thNtd.categorias||[]).join(', ') || 'No lectivo') + (thNtd.detalle ? ' – ' + thNtd.detalle : '')) + '">🚫</span>' : ''}</th>`;
         }
         html += `</tr></thead><tbody>`;
-
         for (let hi = 0; hi < HOURS.length; hi++) {
             html += `<tr>`;
             html += `<td class="hour-label" title="${HOURS[hi]}">${hi + 1}ª</td>`;
-
             for (let di = 0; di < 5; di++) {
                 const cd = new Date(monday); cd.setDate(monday.getDate() + di);
                 const dateStr = toLocalDateStr(cd);
@@ -2664,16 +2445,13 @@
             }
             html += `</tr>`;
         }
-
         html += `</tbody></table></div></div>`;
-
         grid.innerHTML = warnHtml + html;
     }
 
-    // === Tooltip de las celdas del Diario (hover en escritorio, pulsación larga en móvil) ===
+    // Tooltip de las celdas del Diario
     let suppressCellClick = false;
     let cellTooltipHideTimer = null;
-
     function buildCellTip(dateStr, di, hi, groupId, entry, ntd) {
         entry = entry !== undefined ? entry : findEntryForCell(dateStr, hi + 1, groupId);
         ntd = ntd !== undefined ? ntd : getNonTeachingDay(dateStr);
@@ -2696,13 +2474,11 @@
         }
         return parts.join('\n');
     }
-
     function showCellTooltip(text, cell) {
         const t = document.getElementById('cellTooltip');
         if (!t) return;
         t.textContent = text;
         t.style.display = 'block';
-        // Posición: centrado sobre la celda, ajustado a los bordes de la ventana
         const r = cell.getBoundingClientRect();
         const tw = Math.min(t.offsetWidth, 280), th = t.offsetHeight;
         let x = r.left + r.width / 2 - tw / 2;
@@ -2716,37 +2492,29 @@
         const t = document.getElementById('cellTooltip');
         if (t) t.style.display = 'none';
     }
-
-    // Click en celda del calendario: si viene de una pulsación larga que ya
-    // mostró el tooltip, se ignora para que no abra el modal.
     function onDiarioCellClick(ev, el) {
         if (suppressCellClick) { suppressCellClick = false; hideCellTooltip(); return; }
         openDiarioModal(el.dataset.fecha, parseInt(el.dataset.di, 10), parseInt(el.dataset.hi, 10), el.dataset.grupo);
     }
-
-    // Delegación de eventos sobre la rejilla del Diario (sobrevive a los re-render).
     (function setupDiarioCellTooltips() {
         const grid = document.getElementById('diarioScheduleGrid');
         if (!grid) return;
-        // Escritorio: hover
         grid.addEventListener('mouseover', (ev) => {
-            const cell = ev.target.closest('.scell');
+            const cell = ev.target.closest('.scell, .scell-mini');
             if (!cell || !cell.dataset.tip) { hideCellTooltip(); return; }
             clearTimeout(cellTooltipHideTimer);
             showCellTooltip(cell.dataset.tip, cell);
         });
         grid.addEventListener('mouseout', (ev) => {
-            if (ev.target.closest('.scell')) cellTooltipHideTimer = setTimeout(hideCellTooltip, 80);
+            if (ev.target.closest('.scell, .scell-mini')) cellTooltipHideTimer = setTimeout(hideCellTooltip, 80);
         });
-        // Móvil: pulsación larga (~500 ms) muestra el tooltip y cancela el click
         let lpTimer = null;
         grid.addEventListener('touchstart', (ev) => {
-            const cell = ev.target.closest('.scell');
+            const cell = ev.target.closest('.scell, .scell-mini');
             if (!cell || !cell.dataset.tip) return;
             lpTimer = setTimeout(() => {
                 showCellTooltip(cell.dataset.tip, cell);
                 suppressCellClick = true;
-                // Failsafe: si el click nunca llega, restablecer el flag
                 setTimeout(() => { suppressCellClick = false; }, 2500);
                 setTimeout(hideCellTooltip, 2200);
             }, 500);
@@ -2759,7 +2527,6 @@
 
     // ACTIVIDADES
     let editingActivityId = null;
-
     function renderCriteriaCheckboxes(preSelected) {
         const sel = preSelected || [];
         const c = document.getElementById('criteriaCheckboxes');
@@ -2771,16 +2538,12 @@
         });
         c.innerHTML = h;
     }
-
     function toggleActivityTag(tag) {
         const idx = selectedActivityTags.indexOf(tag);
         if (idx === -1) selectedActivityTags.push(tag); else selectedActivityTags.splice(idx, 1);
         const el = document.querySelector(`#activityTagSelector [data-tag="${CSS.escape(tag)}"]`);
         if (el) el.classList.toggle('selected', selectedActivityTags.includes(tag));
     }
-
-    // === Modal de actividad (crear / editar) ===
-    // Abre el modal en modo "nueva actividad": limpia el formulario y muestra "Guardar".
     function openActivityModal() {
         editingActivityId = null;
         selectedActivityTags = [];
@@ -2795,13 +2558,11 @@
         document.getElementById('activityModal').classList.remove('hidden');
         setTimeout(() => document.getElementById('activityTitle').focus(), 100);
     }
-    // Cierra el modal y descarta cualquier edición en curso.
     function closeActivityModal() {
         document.getElementById('activityModal').classList.add('hidden');
         editingActivityId = null;
         selectedActivityTags = [];
     }
-
     function addActivity(e) {
         e.preventDefault();
         const t = document.getElementById('activityTitle').value.trim();
@@ -2810,22 +2571,14 @@
         const criteriaIds = Array.from(ch).map(c => c.value);
         const tags = selectedActivityTags;
         const dateValue = document.getElementById('activityDate').value;
-        // Fecha vacía → null (sin fecha). Una actividad sin fecha no puede tener
-        // sesiones en el diario, así que se eliminan las entradas que la referencian.
         const date = dateValue || null;
-
         if (editingActivityId) {
-            // Si se quitó la fecha y la actividad tiene sesiones en el diario,
-            // pedir confirmación antes de eliminarlas (pasa a "sin proponer").
             if (!date) {
                 const removed = data.diario.filter(d => d.actividad === editingActivityId).length;
                 if (removed > 0) {
-                    if (!confirm('Al quitar la fecha se eliminarán ' + removed + ' sesión(es) del diario asociada(s) a esta actividad. ¿Continuar?')) {
-                        return; // Cancelar: no guardar, el modal permanece abierto
-                    }
+                    if (!confirm('Al quitar la fecha se eliminarán ' + removed + ' sesión(es) del diario asociada(s) a esta actividad. ¿Continuar?')) return;
                 }
             }
-            // Modo edición: actualizar la actividad existente
             const act = data.activities.find(a => a.id === editingActivityId);
             if (act) {
                 act.title = t;
@@ -2834,12 +2587,8 @@
                 act.criteria = criteriaIds;
                 act.tags = tags;
             }
-            // Eliminar las entradas del diario que referencian esta actividad (sin fecha).
-            if (!date) {
-                data.diario = data.diario.filter(d => d.actividad !== editingActivityId);
-            }
+            if (!date) data.diario = data.diario.filter(d => d.actividad !== editingActivityId);
         } else {
-            // Modo nuevo: crear actividad
             data.activities.push({
                 id: generateId(),
                 title: t,
@@ -2849,13 +2598,11 @@
                 tags: tags
             });
         }
-
         editingActivityId = null;
         saveData();
         closeActivityModal();
         renderActivities();
     }
-
     function editActivity(id) {
         const a = data.activities.find(a => a.id === id);
         if (!a) return;
@@ -2871,7 +2618,6 @@
         document.getElementById('activityModal').classList.remove('hidden');
         setTimeout(() => document.getElementById('activityTitle').focus(), 100);
     }
-
     function duplicateActivity(id) {
         const a = data.activities.find(a => a.id === id);
         if (!a) return;
@@ -2886,7 +2632,6 @@
         saveData();
         renderActivities();
     }
-
     function deleteActivity(id) { if(!confirm('¿Eliminar?')) return; data.activities=data.activities.filter(a=>a.id!==id); if(editingActivityId===id) closeActivityModal(); saveData(); renderActivities(); }
     function openTagManager() {
         renderTagManagerList();
@@ -2927,7 +2672,6 @@
         const tag = data.activityTags[index];
         if (!tag) return;
         if (!confirm(`¿Eliminar la etiqueta "${tag}"? Se eliminará de todas las actividades.`)) return;
-        // Remove from all activities
         (data.activities || []).forEach(a => { if (a.tags) a.tags = a.tags.filter(t => t !== tag); });
         data.activityTags.splice(index, 1);
         if (activityFilterTag === tag) activityFilterTag = null;
@@ -2935,22 +2679,19 @@
         renderTagManagerList();
         renderActivities();
     }
-    // ===== Paleta de colores por etiqueta de actividad (tema claro) =====
-    // Cada etiqueta recibe un color estable basado en su nombre (hash determinista).
-    // `text` = color legible sobre fondo claro; `solid` = color sólido para estado activo.
     const TAG_PALETTE = [
-        { r:6,   g:182, b:212, text:'#0e7490', solid:'#0891b2' }, // cyan
-        { r:139, g:92,  b:246, text:'#6d28d9', solid:'#7c3aed' }, // violet
-        { r:16,  g:185, b:129, text:'#047857', solid:'#059669' }, // emerald
-        { r:245, g:158, b:11,  text:'#b45309', solid:'#d97706' }, // amber
-        { r:244, g:63,  b:94,  text:'#be123c', solid:'#e11d48' }, // rose
-        { r:59,  g:130, b:246, text:'#1d4ed8', solid:'#2563eb' }, // blue
-        { r:236, g:72,  b:153, text:'#be185d', solid:'#db2777' }, // pink
-        { r:20,  g:184, b:166, text:'#0f766e', solid:'#0d9488' }, // teal
-        { r:249, g:115, b:22,  text:'#c2410c', solid:'#ea580c' }, // orange
-        { r:99,  g:102, b:241, text:'#4338ca', solid:'#4f46e5' }, // indigo
-        { r:132, g:204, b:22,  text:'#4d7c0f', solid:'#65a30d' }, // lime
-        { r:14,  g:165, b:233, text:'#0369a1', solid:'#0284c7' }  // sky
+        { r:6,   g:182, b:212, text:'#0e7490', solid:'#0891b2' },
+        { r:139, g:92,  b:246, text:'#6d28d9', solid:'#7c3aed' },
+        { r:16,  g:185, b:129, text:'#047857', solid:'#059669' },
+        { r:245, g:158, b:11,  text:'#b45309', solid:'#d97706' },
+        { r:244, g:63,  b:94,  text:'#be123c', solid:'#e11d48' },
+        { r:59,  g:130, b:246, text:'#1d4ed8', solid:'#2563eb' },
+        { r:236, g:72,  b:153, text:'#be185d', solid:'#db2777' },
+        { r:20,  g:184, b:166, text:'#0f766e', solid:'#0d9488' },
+        { r:249, g:115, b:22,  text:'#c2410c', solid:'#ea580c' },
+        { r:99,  g:102, b:241, text:'#4338ca', solid:'#4f46e5' },
+        { r:132, g:204, b:22,  text:'#4d7c0f', solid:'#65a30d' },
+        { r:14,  g:165, b:233, text:'#0369a1', solid:'#0284c7' }
     ];
     function tagColor(tag) {
         let h = 0;
@@ -2958,8 +2699,6 @@
         for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
         return TAG_PALETTE[Math.abs(h) % TAG_PALETTE.length];
     }
-    // Devuelve un atributo style="..." con variables CSS para el color de la etiqueta.
-    // Si tag es null/vacío (botón "Todas"), devuelve cadena vacía → se usan los defaults del CSS.
     function tagStyle(tag) {
         if (!tag) return '';
         const c = tagColor(tag);
@@ -2984,8 +2723,6 @@
     }
     function setActivityFilter(tag) { activityFilterTag = tag; renderActivityFilterBar(); renderActivities(); }
     function toggleActProposalFilter(mode) {
-        // Sin toggle: el botón pulsado se activa y permanece activo.
-        // (Antes, si ya estaba activo, se desactivaba volviendo a "Todas".)
         actProposalFilter = mode;
         document.getElementById('tagActAll').classList.toggle('active', actProposalFilter === null);
         document.getElementById('tagActYes').classList.toggle('active', actProposalFilter === 'proposed');
@@ -3002,7 +2739,6 @@
     function renderActivities() {
         updateActivityTagCounts();
         renderActivityFilterBar();
-        // Etiqueta de grupo activo
         const groupId = activitiesGroupFilter || null;
         const groupName = groupId ? (data.groups.find(g => g.id === groupId)?.name || '') : '';
         const labelEl = document.getElementById('activitiesGroupLabel');
@@ -3011,7 +2747,6 @@
         let acts = data.activities || [];
         if (activityFilterTag) acts = acts.filter(a => (a.tags||[]).includes(activityFilterTag));
         if (actProposalFilter) {
-            // "Propuesta" respecto al grupo seleccionado: sesión en el diario de ese grupo.
             const diarioEntries = groupId ? data.diario.filter(d => d.grupo === groupId) : data.diario;
             const usedActIds = new Set();
             diarioEntries.forEach(d => { if (d.actividad) usedActIds.add(d.actividad); });
@@ -3024,8 +2759,6 @@
             const cb=(a.criteria||[]).map(cid=>{ const cr=CRITERIA.find(c=>c.id===cid); return cr?`<span class="badge-criteria badge-worked">${cr.nombre}</span>`:''; }).join(' ');
             const tg=(a.tags||[]).map(t=>`<span class="act-tag-on-card" ${tagStyle(t)}>${escHtml(t)}</span>`).join(' ');
             const tagsHtml = tg ? `<div class="flex flex-wrap gap-1 mb-1">${tg}</div>` : '';
-            // Grupos en los que esta actividad ha sido propuesta (tiene sesión en el diario).
-            // Un mismo grupo cuenta solo una vez aunque tenga varias sesiones.
             const activityEntries = data.diario.filter(d=>d.actividad===a.id);
             const le = activityEntries.length; const isEditing = editingActivityId === a.id;
             const groupIdsForActivity = [...new Set(activityEntries.map(d=>d.grupo).filter(g=>g && data.groups.some(gr=>gr.id===g)))];
@@ -3045,12 +2778,8 @@
         Object.values(SABERES).forEach(b => Object.values(b.subbloques).forEach(sb => sb.items.forEach(i => {
             s[i.id] = { ...i, worked: false, count: 0, dates: [] };
         })));
-        // Filtra las entradas del diario por grupo si se especifica groupId.
-        // Una entrada "huérfana" (sin grupo) solo cuenta en la vista "Todos los grupos".
         let entries = data.diario;
-        if (groupId) {
-            entries = entries.filter(d => d.grupo === groupId);
-        }
+        if (groupId) entries = entries.filter(d => d.grupo === groupId);
         entries.forEach(d => {
             (d.saberes || []).forEach(sid => {
                 if (s[sid]) {
@@ -3062,15 +2791,10 @@
         });
         return s;
     }
-    // Devuelve el número de sesiones (entradas de diario) considerando el filtro de grupo.
     function getSaberesSessionCount(groupId) {
         if (groupId) return data.diario.filter(d => d.grupo === groupId).length;
         return data.diario.length;
     }
-    // === Helpers unificados de filtro por grupo (Saberes + Criterios) ===
-    // Antes había dos pares idénticos (populateSaberesGroupFilter/onSaberesGroupChange y
-    // populateCriteriaGroupFilter/onCriteriaGroupChange); ahora un único par parametrizado
-    // recibe el id del <select>, el setter de la variable de filtro y el renderer a invocar.
     function populateGroupFilter(selectId, setFilterVar) {
         const sel = document.getElementById(selectId);
         if (!sel) return;
@@ -3078,7 +2802,6 @@
         const gs = data.groups || [];
         sel.innerHTML = '<option value="">Todos los grupos</option>' +
             gs.map(g => `<option value="${g.id}">${escHtml(g.name)}</option>`).join('');
-        // Si el grupo seleccionado dejó de existir, vuelve a "Todos".
         sel.value = (cv && gs.some(g => g.id === cv)) ? cv : '';
         setFilterVar(sel.value || null);
     }
@@ -3087,23 +2810,19 @@
         if (sel) setFilterVar(sel.value || null);
         renderFn();
     }
-    // Wrappers específicos para mantener los onclick del HTML intactos.
     function populateSaberesGroupFilter() { populateGroupFilter('saberesGroupFilter', v => saberesGroupFilter = v); }
     function onSaberesGroupChange() { onGroupFilterChange('saberesGroupFilter', v => saberesGroupFilter = v, renderSaberesDashboard); }
     function renderSaberesDashboard() {
         const groupId = saberesGroupFilter || null;
         const groupName = groupId ? (data.groups.find(g => g.id === groupId)?.name || '') : '';
-        // Etiqueta junto al título que indica el grupo activo.
         const labelEl = document.getElementById('saberesGroupLabel');
         if (labelEl) labelEl.textContent = groupName ? `· ${groupName}` : '· Todos los grupos';
-
         const s = getSaberesStatus(groupId);
         const ai = getAllSaberIds();
         const wc = ai.filter(id => s[id]?.worked).length;
         const tc = ai.length;
         const p = tc > 0 ? Math.round((wc / tc) * 100) : 0;
         const sessions = getSaberesSessionCount(groupId);
-
         document.getElementById('saberesSummary').innerHTML = `
             <div class="bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-2xl p-4 shadow-lg"><div class="text-3xl font-bold">${wc}</div><div class="text-blue-100 text-sm">Trabajados</div></div>
             <div class="bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl p-4 shadow-lg"><div class="text-3xl font-bold">${tc - wc}</div><div class="text-amber-100 text-sm">Pendientes</div></div>
@@ -3111,7 +2830,6 @@
             <div class="bg-gradient-to-br from-violet-500 to-purple-600 text-white rounded-2xl p-4 shadow-lg"><div class="text-3xl font-bold">${sessions}</div><div class="text-purple-100 text-sm">Sesiones</div></div>`;
         document.getElementById('saberesOverallProgress').textContent = p + '%';
         document.getElementById('saberesOverallProgressBar').style.width = p + '%';
-
         let h = '';
         Object.keys(SABERES).forEach(bid => {
             const b = SABERES[bid];
@@ -3138,23 +2856,17 @@
 
     // CRITERIOS DASHBOARD
     function getCriteriaStatus(groupId) {
-        // Determinar qué actividades tienen al menos una entrada en el diario.
-        // Si se especifica groupId, solo se consideran las entradas de ese grupo.
         const usedActivityIds = new Set();
         let diarioEntries = data.diario;
         if (groupId) diarioEntries = diarioEntries.filter(d => d.grupo === groupId);
         diarioEntries.forEach(d => { if (d.actividad) usedActivityIds.add(d.actividad); });
-
         const s = {};
         CRITERIA.forEach(c => { s[c.id] = { ...c, proposed: false, used: false, proposedCount: 0, usedCount: 0, dates: [] }; });
-
-        // Criterios propuestos: aparecen en actividades de la base de datos (independiente del grupo)
         data.activities.forEach(a => {
             (a.criteria || []).forEach(cid => {
                 if (s[cid]) {
                     s[cid].proposed = true;
                     s[cid].proposedCount++;
-                    // Si la actividad está usada en el diario (del grupo seleccionado), el criterio también
                     if (usedActivityIds.has(a.id)) {
                         s[cid].used = true;
                         s[cid].usedCount++;
@@ -3163,8 +2875,6 @@
                 }
             });
         });
-
-        // Complementar fechas usadas desde las entradas del diario (filtradas por grupo)
         diarioEntries.forEach(d => {
             if (d.actividad) {
                 const a = data.activities.find(a => a.id === d.actividad);
@@ -3175,13 +2885,11 @@
                 }
             }
         });
-
         return s;
     }
     function populateActivitiesGroupFilter() { populateGroupFilter('activitiesGroupFilter', v => activitiesGroupFilter = v); }
     function onActivitiesGroupChange() { onGroupFilterChange('activitiesGroupFilter', v => activitiesGroupFilter = v, renderActivities); }
     function updateActivityTagCounts() {
-        // "Propuesta" = actividad con al menos una sesión en el diario (del grupo seleccionado, si hay filtro).
         const groupId = activitiesGroupFilter || null;
         const diarioEntries = groupId ? data.diario.filter(d => d.grupo === groupId) : data.diario;
         const usedActIds = new Set();
@@ -3210,7 +2918,6 @@
         if (!criteriaFilterMode) { c.innerHTML = ''; return; }
         const groupId = criteriaGroupFilter || null;
         const s = getCriteriaStatus(groupId);
-        // usedActIds también respeta el filtro de grupo para mostrar solo actividades usadas por ese grupo.
         const usedActIds = new Set();
         let diarioEntries = data.diario;
         if (groupId) diarioEntries = diarioEntries.filter(d => d.grupo === groupId);
@@ -3248,10 +2955,8 @@
     function renderCriteriaDashboard() {
         const groupId = criteriaGroupFilter || null;
         const groupName = groupId ? (data.groups.find(g => g.id === groupId)?.name || '') : '';
-        // Etiqueta junto al título que indica el grupo activo.
         const labelEl = document.getElementById('criteriaGroupLabel');
         if (labelEl) labelEl.textContent = groupName ? `· ${groupName}` : '· Todos los grupos';
-
         const s = getCriteriaStatus(groupId);
         const usedList = CRITERIA.filter(c => s[c.id].used);
         const proposedOnly = CRITERIA.filter(c => s[c.id].proposed && !s[c.id].used);
@@ -3266,8 +2971,6 @@
     }
 
     // ==================== INFORMES ====================
-    // Pestaña de resumen global del curso activo, con filtro por grupo opcional.
-    // Reutiliza los helpers existentes (getSaberesStatus, getCriteriaStatus) pasándoles el groupId.
     function populateInformesGroupFilter() { populateGroupFilter('informesGroupFilter', v => informesGroupFilter = v); }
     function onInformesGroupChange() { onGroupFilterChange('informesGroupFilter', v => informesGroupFilter = v, renderInformes); }
     function renderInformes() {
@@ -3277,45 +2980,31 @@
         const groupName = groupId ? (data.groups.find(g => g.id === groupId)?.name || '') : '';
         const labelEl = document.getElementById('informesGroupLabel');
         if (labelEl) labelEl.textContent = groupName ? '· ' + groupName : '· Todos los grupos';
-
-        // Filtrar entradas del diario por grupo si procede
         const diarioEntries = groupId ? data.diario.filter(d => d.grupo === groupId) : data.diario;
         const usedActIds = new Set();
         diarioEntries.forEach(d => { if (d.actividad) usedActIds.add(d.actividad); });
-
-        // Métricas de saberes
         const saberesStatus = getSaberesStatus(groupId);
         const allSaberIds = getAllSaberIds();
         const saberesWorked = allSaberIds.filter(id => saberesStatus[id]?.worked).length;
         const saberesTotal = allSaberIds.length;
         const saberesPct = saberesTotal > 0 ? Math.round((saberesWorked / saberesTotal) * 100) : 0;
-
-        // Métricas de criterios
         const criteriaStatus = getCriteriaStatus(groupId);
         const criteriaUsed = CRITERIA.filter(c => criteriaStatus[c.id].used).length;
         const criteriaProposed = CRITERIA.filter(c => criteriaStatus[c.id].proposed && !criteriaStatus[c.id].used).length;
         const criteriaNotProp = CRITERIA.filter(c => !criteriaStatus[c.id].proposed).length;
         const criteriaTotal = CRITERIA.length;
-
-        // Métricas de actividades
         const activitiesTotal = (data.activities || []).length;
         const activitiesUsed = (data.activities || []).filter(a => usedActIds.has(a.id)).length;
-
-        // Métricas de alumnado
         const studentsTotal = (data.students || []).length;
         const studentsInGroup = groupId ? (data.students || []).filter(s => s.groupId === groupId).length : studentsTotal;
         const groupsTotal = (data.groups || []).length;
-
-        // Observaciones: lista real filtrada por grupo (conectada con la pantalla Alumnado)
         let studentsForObs = data.students || [];
         if (groupId) studentsForObs = studentsForObs.filter(s => s.groupId === groupId);
         const studentIdsSet = new Set(studentsForObs.map(s => s.id));
         const obsList = (data.observations || []).filter(o => studentIdsSet.has(o.studentId));
         const obsTotal = obsList.length;
         const obsSorted = obsList.slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
-
         const fmtPct = (n, total) => total > 0 ? Math.round((n / total) * 100) + '%' : '—';
-
         content.innerHTML = `
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="glass rounded-2xl p-4 report-item" onclick="openReportModal('diario')">
@@ -3335,7 +3024,6 @@
                     <div class="text-slate-400 text-sm">Alumno(s)${groupId ? '' : ' (' + groupsTotal + ' grupo(s))'}</div>
                 </div>
             </div>
-
             <div class="glass rounded-2xl p-5">
                 <h3 class="font-bold text-slate-100 mb-3">Resumen de actividades</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -3353,7 +3041,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="glass rounded-2xl p-5">
                 <h3 class="font-bold text-slate-100 mb-3">Criterios de evaluación <span class="text-xs text-slate-400 font-normal">(pulsa para generar informe)</span></h3>
                 <div class="space-y-2">
@@ -3375,7 +3062,6 @@
                 </div>
                 <p class="text-xs text-slate-400 mt-3">💡 Al pulsar, podrás elegir qué categorías incluir (usados, propuestos, sin proponer, o combinaciones).</p>
             </div>
-
             <div class="glass rounded-2xl p-5">
                 <h3 class="font-bold text-slate-100 mb-3">Saberes básicos</h3>
                 <div class="report-item flex items-center gap-3 p-2 rounded-lg" onclick="openReportModal('saberes')">
@@ -3390,7 +3076,6 @@
                 </div>
                 <p class="text-xs text-slate-400 mt-3">Pulsa sobre "Trabajados" o "Pendientes" para generar el informe correspondiente en HTML o PDF.</p>
             </div>
-
             <div class="glass rounded-2xl p-5">
                 <div class="flex items-center justify-between mb-3">
                     <h3 class="font-bold text-slate-100">Observaciones del alumnado</h3>
@@ -3417,7 +3102,7 @@
         `;
     }
 
-    // ==================== GENERACIÓN DE INFORMES (HTML / PDF) ====================
+    // ==================== GENERACIÓN DE INFORMES ====================
     let currentReportType = null;
     const REPORT_TITLES = {
         'diario': 'Sesiones de diario',
@@ -3440,7 +3125,6 @@
         const critOpts = document.getElementById('reportCriteriaOptions');
         if (type === 'criterios') {
             critOpts.classList.remove('hidden');
-            // Reset checkboxes
             document.getElementById('rptCritAll').checked = false;
             document.getElementById('rptCritUsed').checked = (precheckCrit === 'used');
             document.getElementById('rptCritProposed').checked = (precheckCrit === 'proposed');
@@ -3464,8 +3148,6 @@
         document.getElementById('rptCritProposed').checked = all;
         document.getElementById('rptCritNotProp').checked = all;
     }
-    // === Selección de alumnos para el informe de observaciones ===
-    // Rellena la lista de checkboxes con los alumnos del grupo activo (o todos si no hay filtro).
     function populateReportStudentList() {
         const container = document.getElementById('reportStudentList');
         if (!container) return;
@@ -3473,7 +3155,6 @@
         let students = data.students || [];
         if (groupId) students = students.filter(s => s.groupId === groupId);
         const sorted = students.slice().sort((a, b) => a.name.localeCompare(b.name));
-        // Render de botones por grupo (solo si hay más de un grupo visible)
         const groupBtnsContainer = document.getElementById('reportStudentGroupBtns');
         if (groupBtnsContainer) {
             const visibleGroups = {};
@@ -3500,21 +3181,17 @@
             const gName = g ? g.name : 'Sin grupo';
             return `<label class="flex items-center gap-2 cursor-pointer p-1 rounded hover:bg-slate-700/30"><input type="checkbox" class="rpt-student-chk rounded border-slate-600 text-cyan-400" value="${s.id}" data-group="${s.groupId}"> <span class="text-sm text-slate-200">${escHtml(s.name)}</span><span class="text-xs text-slate-500 ml-auto">${escHtml(gName)}</span></label>`;
         }).join('');
-        // Por defecto, todos seleccionados
         selectAllReportStudents(true);
     }
     function selectAllReportStudents(value) {
         document.querySelectorAll('.rpt-student-chk').forEach(chk => { chk.checked = value; });
     }
-    // Conmuta la selección de todos los alumnos de un grupo:
-    // si todos están marcados, los desmarca; si falta alguno, marca todos.
     function toggleReportGroup(groupId) {
         const groupChks = Array.from(document.querySelectorAll(`.rpt-student-chk[data-group="${groupId}"]`));
         if (!groupChks.length) return;
         const allChecked = groupChks.every(c => c.checked);
         groupChks.forEach(c => { c.checked = !allChecked; });
     }
-    // Devuelve un Set con los IDs de alumnos seleccionados, o null si no hay ninguno.
     function getSelectedReportStudentIds() {
         const checked = Array.from(document.querySelectorAll('.rpt-student-chk:checked')).map(c => c.value);
         return checked.length ? new Set(checked) : null;
@@ -3604,9 +3281,8 @@ ${body}
             const b = SABERES[bid];
             let bt = 0, bw = 0;
             Object.values(b.subbloques).forEach(sb => sb.items.forEach(i => { bt++; if(s[i.id]?.worked) bw++; }));
-            // En modo 'pending', calcular cuántos pendientes hay en este bloque
             const pendingInBlock = bt - bw;
-            if (onlyPending && pendingInBlock === 0) return; // Saltar bloques sin pendientes
+            if (onlyPending && pendingInBlock === 0) return;
             const headerCount = onlyPending ? `${pendingInBlock} pendiente(s) de ${bt}` : `${bw}/${bt}`;
             h += `<div class="bloque-title">${escHtml(b.nombre)} (${headerCount})</div>`;
             h += `<table><thead><tr><th>Saber</th><th>Estado</th><th>Fechas</th><th>Sesiones</th></tr></thead><tbody>`;
@@ -3614,7 +3290,6 @@ ${body}
                 const sb = b.subbloques[sid];
                 sb.items.forEach(i => {
                     const si = s[i.id];
-                    // En modo 'pending', saltar los trabajados
                     if (onlyPending && si.worked) return;
                     const ds = si.dates.slice().sort().map(d => formatDate(d)).join(', ');
                     const badge = si.worked ? '<span class="badge badge-worked">Trabajado</span>' : '<span class="badge badge-pending">Pendiente</span>';
@@ -3700,10 +3375,7 @@ ${body}
     function buildObservacionesReport(groupId, selectedStudentIds) {
         let students = data.students || [];
         if (groupId) students = students.filter(s => s.groupId === groupId);
-        // Si se especificaron alumnos concretos, filtrar aún más
-        if (selectedStudentIds) {
-            students = students.filter(s => selectedStudentIds.has(s.id));
-        }
+        if (selectedStudentIds) students = students.filter(s => selectedStudentIds.has(s.id));
         const studentIds = new Set(students.map(s => s.id));
         let obs = (data.observations || []).filter(o => studentIds.has(o.studentId));
         if (!students.length) return '<p class="empty">No hay alumnos seleccionados.</p>';
@@ -3720,16 +3392,160 @@ ${body}
     }
 
     function formatDate(d) { if(!d) return ''; const p=d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
-    // Exporta el sobre completo (todos los cursos). Si se quiere exportar solo el curso activo,
-    // basta con exportar appData.courseData[currentCourseId], pero lo habitual es llevarse todos.
     function exportAllData() { const b=new Blob([JSON.stringify(appData,null,2)],{type:'application/json'}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=`tec4_diario_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(u); }
     function importAllData(event) { const f=event.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=function(e) { try { const imp=JSON.parse(e.target.result); if(confirm('¿Reemplazar todos los datos actuales (incluidos todos los cursos)?')) { if (imp && Array.isArray(imp.courses) && imp.courseData) { appData=imp; normalizeAppData(); } else { appData=migrateOldFormat(imp); normalizeAppData(); } normalizeData(); diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId); diarioDayOffset = 0; saveData(); populateCourseSelector(); updateAllGroupSelects(); showTab(isMobileMode() ? 'inicio' : 'diario'); alert('Importado'); } } catch(err) { alert('Error'); } }; r.readAsText(f); event.target.value=''; }
 
-    // Cierra el desplegable "Ir a…" al hacer clic fuera de él.
     document.addEventListener('click', function(e) {
         const d = document.getElementById('weekJumpDetails');
         if (d && d.open && !d.contains(e.target)) d.open = false;
     });
+
+    // ==================== AVISO DE "CLASE EN CURSO" ====================
+    // Durante los primeros 5 minutos desde el inicio de una sesión con uno o
+    // varios grupos asignados en el horario, se muestra un aviso con la
+    // información de la última sesión registrada con el grupo seleccionado
+    // (por defecto el primero). Si hay 2+ grupos, aparece un selector.
+    // Pasados los 5 minutos, el aviso desaparece automáticamente.
+    const CLASS_START_MINUTES = [
+        8 * 60 + 15,   // 1ª  8:15
+        9 * 60 + 15,   // 2ª  9:15
+        10 * 60 + 15,  // 3ª 10:15
+        11 * 60 + 45,  // 4ª 11:45
+        12 * 60 + 45,  // 5ª 12:45
+        13 * 60 + 45   // 6ª 13:45
+    ];
+    const CLASS_NOTIF_WINDOW_MIN = 5;
+
+    let notifSelectedGroupId = null;
+    let notifSelectedGroupKey = null;
+    let dismissedNotifKey = null;
+
+    // Devuelve la info de la clase en curso (últimos 5 min desde su inicio),
+    // con la lista de grupos válidos que tiene asignados esa franja. Null si
+    // no hay ninguna sesión activa ahora mismo.
+    function getCurrentClasses() {
+        if (!data || !data.schedule) return null;
+        const now = new Date();
+        const di = (now.getDay() + 6) % 7;   // 0 = Lunes … 6 = Domingo
+        if (di > 4) return null;             // sábado/domingo: no hay clase
+        const nowMin = now.getHours() * 60 + now.getMinutes();
+        for (let hi = 0; hi < CLASS_START_MINUTES.length; hi++) {
+            const start = CLASS_START_MINUTES[hi];
+            if (nowMin >= start && nowMin < start + CLASS_NOTIF_WINDOW_MIN) {
+                const groupIds = getScheduleGroups(`${di}-${hi}`)
+                    .filter(g => data.groups.some(x => x.id === g));
+                if (groupIds.length) {
+                    return { di, hi, groupIds, key: toLocalDateStr(now) + '-' + di + '-' + hi };
+                }
+            }
+        }
+        return null;
+    }
+
+    // Última sesión registrada con ese grupo con fecha estrictamente anterior a hoy.
+    // Ordena por fecha descendente y, en empate, por hora descendente.
+    function getPreviousSessionForGroup(groupId, todayStr) {
+        const entries = (data.diario || []).filter(e => e.grupo === groupId && e.fecha && e.fecha < todayStr);
+        if (!entries.length) return null;
+        entries.sort((a, b) => {
+            if (a.fecha !== b.fecha) return b.fecha.localeCompare(a.fecha);
+            return (parseInt(b.hora) || 0) - (parseInt(a.hora) || 0);
+        });
+        return entries[0];
+    }
+
+    function dismissClassNotification() {
+        const current = getCurrentClasses();
+        if (current) dismissedNotifKey = current.key;
+        const el = document.getElementById('classNotification');
+        if (el) { el.classList.add('hidden'); el.innerHTML = ''; }
+    }
+
+    function selectNotifGroup(groupId) {
+        notifSelectedGroupId = groupId;
+        renderClassNotification();
+    }
+
+    function renderClassNotification() {
+        const el = document.getElementById('classNotification');
+        if (!el) return;
+        const current = getCurrentClasses();
+        if (!current || current.key === dismissedNotifKey) {
+            el.classList.add('hidden'); el.innerHTML = ''; return;
+        }
+        // Reset del grupo seleccionado si la clave de la clase cambió o el
+        // grupo ya no es válido para la franja actual.
+        if (notifSelectedGroupKey !== current.key || !current.groupIds.includes(notifSelectedGroupId)) {
+            notifSelectedGroupId = current.groupIds[0];
+            notifSelectedGroupKey = current.key;
+        }
+        const selectedId = notifSelectedGroupId;
+        const todayStr = toLocalDateStr(new Date());
+        const last = getPreviousSessionForGroup(selectedId, todayStr);
+        const group = data.groups.find(g => g.id === selectedId);
+        const groupName = group ? group.name : 'Grupo';
+        const gc = getGroupColor(selectedId);
+
+        let h = '<div class="glass rounded-2xl p-4 fade-in" style="border-left:4px solid #4f46e5;">';
+        // Cabecera
+        h += '<div class="flex items-start justify-between gap-3">';
+        h += '<div class="flex items-start gap-2 min-w-0">';
+        h += '<span class="text-xl leading-none">🔔</span>';
+        h += '<div class="min-w-0 flex-1">';
+        h += '<div class="font-bold text-slate-100">Clase en curso · ' + DAYS[current.di] + '</div>';
+        h += '<div class="text-xs text-slate-400">' + escHtml(HOURS[current.hi]) + ' · últimos 5 minutos desde el inicio</div>';
+        h += '</div></div>';
+        h += '<button onclick="dismissClassNotification()" class="text-slate-400 hover:text-slate-600 p-1 -mt-1 -mr-1 flex-shrink-0" title="Cerrar aviso"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>';
+        h += '</div>';
+
+        // Selector de grupo (solo si hay 2 o más grupos en la franja)
+        if (current.groupIds.length >= 2) {
+            h += '<div class="mt-3 pt-3 border-t border-slate-700/40">';
+            h += '<div class="text-xs font-semibold text-slate-400 mb-2">Grupos en clase ahora (' + current.groupIds.length + '):</div>';
+            h += '<div class="flex flex-wrap gap-1.5">';
+            current.groupIds.forEach(gid => {
+                const g = data.groups.find(x => x.id === gid);
+                const gci = getGroupColor(gid);
+                const active = gid === selectedId;
+                const style = active
+                    ? 'background:' + gci.border + ';color:#ffffff;border-color:' + gci.border + ';'
+                    : 'background:' + gci.bg + ';color:' + gci.text + ';border-color:' + gci.border + ';';
+                h += '<button onclick="selectNotifGroup(\'' + gid + '\')" class="rounded-full px-3 py-1 text-xs font-semibold border transition" style="' + style + '">' + escHtml(g ? g.name : '(?)') + '</button>';
+            });
+            h += '</div></div>';
+        }
+
+        // Cuerpo: última sesión del grupo seleccionado
+        h += '<div class="mt-3 pt-3 border-t border-slate-700/40">';
+        if (!last) {
+            h += '<p class="text-sm text-slate-400 italic">No hay sesiones anteriores registradas para <strong style="color:' + gc.text + '">' + escHtml(groupName) + '</strong>.</p>';
+        } else {
+            const activityTitle = last.actividad ? (data.activities.find(a => a.id === last.actividad)?.title || '') : '';
+            const saberes = (last.saberes || []).map(findSaberById).filter(Boolean);
+            const hLabel = last.hora ? (HOURS[parseInt(last.hora) - 1] || last.hora + 'ª') : '';
+
+            h += '<div class="text-xs font-semibold text-slate-400 mb-1">Última sesión de <span style="color:' + gc.text + '">' + escHtml(groupName) + '</span> · ' + formatDate(last.fecha) + (hLabel ? ' · ' + escHtml(hLabel) : '') + '</div>';
+            h += last.contenido
+                ? '<p class="text-sm text-slate-300 whitespace-pre-line">' + escHtml(last.contenido) + '</p>'
+                : '<p class="text-sm text-slate-400 italic">Sin contenido registrado.</p>';
+            if (activityTitle) h += '<div class="text-xs text-slate-400 mt-1.5">📋 ' + escHtml(activityTitle) + '</div>';
+            if (saberes.length) {
+                h += '<div class="flex flex-wrap gap-1 mt-1.5">';
+                saberes.forEach(s => { h += '<span class="badge-saberes badge-saberes-worked">' + escHtml(s.nombre) + '</span>'; });
+                h += '</div>';
+            }
+            if (last.observaciones) h += '<div class="text-xs text-slate-400 mt-1.5 whitespace-pre-line">📝 ' + escHtml(last.observaciones) + '</div>';
+        }
+        h += '</div>';
+
+        h += '</div>';
+        el.innerHTML = h;
+        el.classList.remove('hidden');
+    }
+
+    // Reevaluar cada 15 s: al cruzar el umbral de los 5 minutos, el aviso
+    // desaparece solo; si empieza otra clase, aparece automáticamente.
+    setInterval(renderClassNotification, 15000);
 
     async function init() {
         // Migración automática: si hay datos antiguos en ruta aislada, moverlos a la ruta compartida
@@ -3740,150 +3556,31 @@ ${body}
                 if (oldSnap.exists()) {
                     const oldData = oldSnap.val();
                     if (oldData && oldData.payload) {
-                        // Comprobar si la ruta compartida ya tiene datos
                         const newSnap = await db.ref(FB_PATH + '/data').once('value');
                         if (!newSnap.exists()) {
-                            // Migrar los datos antiguos a la ruta compartida
                             await db.ref(FB_PATH + '/data').set(oldData);
                             console.log('Datos migrados a ruta compartida.');
                         }
                     }
                 }
-                // Limpiar la clave antigua del localStorage
                 localStorage.removeItem('tec4_firebase_key');
             } catch (e) {
                 console.warn('Error en migración automática:', e);
             }
         }
-        // Primero cargar datos locales como base rápida
         loadData();
-        // Intentar cargar desde Firebase (datos más recientes de la nube)
         const loaded = await loadDataFromFirebase();
         if (loaded) {
-            saveDataLocal(); // Actualizar localStorage con datos de Firebase
+            saveDataLocal();
         }
-        // Posicionar el Diario en la semana apropiada del curso activo
-        // (semana actual si hoy cae dentro del curso, o primera/última en caso contrario).
         diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId); diarioDayOffset = 0;
         populateCourseSelector();
         updateAllGroupSelects();
         applyTheme();
-        // En desktop arrancar en Diario; en móvil/tablet en la pantalla de inicio
         showTab(isMobileMode() ? 'inicio' : 'diario');
-        notifyLastSession();
+        renderClassNotification();
     }
     init();
-
-    // ==================== AVISO DE ÚLTIMA SESIÓN ====================
-    // Al abrir la app: si hoy hay clase de algún grupo (según el horario, sin ser
-    // fin de semana ni día no lectivo), se muestra la última sesión anotada en el
-    // diario de ese grupo con fecha anterior a hoy. El aviso se oculta una vez han
-    // pasado 5 minutos desde el inicio de la primera clase de hoy de ese grupo.
-    // Si hay clase con dos o más grupos, el usuario escoge cuál consultar.
-    const CLASS_START_MIN = [495, 555, 615, 705, 765, 825]; // 8:15, 9:15, 10:15, 11:45, 12:45, 13:45
-
-    function getTodayScheduleByGroup() {
-        const now = new Date();
-        const dow = now.getDay();
-        if (dow === 0 || dow === 6) return {};
-        const todayStr = toLocalDateStr(now);
-        if (getNonTeachingDay(todayStr)) return {};
-        const sch = data.schedule || {};
-        const byGroup = {};
-        for (let hi = 0; hi < HOURS.length; hi++) {
-            const g = sch[(dow - 1) + '-' + hi];
-            if (g) (byGroup[g] = byGroup[g] || []).push(hi);
-        }
-        return byGroup;
-    }
-
-    function findLastSession(groupId, todayStr) {
-        const entries = data.diario
-            .filter(e => (e.grupo || '') === groupId && e.fecha && e.fecha < todayStr)
-            .sort((a, b) => (b.fecha + String(b.hora).padStart(2, '0')).localeCompare(a.fecha + String(a.hora).padStart(2, '0')));
-        return entries[0] || null;
-    }
-
-    function groupName(groupId) {
-        const g = (data.groups || []).find(x => x.id === groupId);
-        return g ? g.name : 'Grupo';
-    }
-
-    function lastSessionBodyHtml(groupId) {
-        const todayStr = toLocalDateStr(new Date());
-        const e = findLastSession(groupId, todayStr);
-        if (!e) {
-            return `<div class="text-center py-4">
-                <div class="text-3xl mb-2">📭</div>
-                <p class="text-sm text-slate-400">No hay sesiones anteriores anotadas para <strong class="text-cyan-400">${escHtml(groupName(groupId))}</strong>.</p>
-            </div>`;
-        }
-        const hLabel = HOURS[(parseInt(e.hora, 10) || 1) - 1] || '';
-        const act = e.actividad ? ((data.activities || []).find(a => a.id === e.actividad) || {}).title || '' : '';
-        const saberes = (e.saberes || []).map(findSaberById).filter(Boolean);
-        return `
-            <div class="flex items-center gap-2 flex-wrap text-sm text-slate-400 mb-3">
-                <span>📅 ${formatDate(e.fecha)}</span><span>·</span><span>🕐 ${escHtml(hLabel)}</span>
-            </div>
-            ${act ? `<div class="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-3 mb-3"><div class="text-xs text-cyan-400 font-semibold mb-1">Actividad</div><div class="text-sm text-slate-200">${escHtml(act)}</div></div>` : ''}
-            ${e.contenido ? `<div class="mb-3"><div class="text-xs text-slate-400 font-semibold mb-1">Contenido</div><p class="text-sm text-slate-200 whitespace-pre-wrap">${escHtml(e.contenido)}</p></div>` : ''}
-            ${e.observaciones ? `<div class="mb-3"><div class="text-xs text-slate-400 font-semibold mb-1">Observaciones</div><p class="text-sm text-slate-300 whitespace-pre-wrap">${escHtml(e.observaciones)}</p></div>` : ''}
-            ${saberes.length ? `<div><div class="text-xs text-slate-400 font-semibold mb-1">Saberes trabajados</div><div class="flex flex-wrap gap-1">${saberes.map(s => `<span class="badge-saberes badge-saberes-worked">${escHtml(s.nombre)}</span>`).join('')}</div></div>` : ''}`;
-    }
-
-    function showLastSessionModal(groupId) {
-        document.getElementById('lastSessionModal').innerHTML = `
-            <div class="flex items-start justify-between gap-3 mb-4">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-100">📖 Última sesión</h3>
-                    <p class="text-sm text-slate-400">Grupo <strong class="text-cyan-400">${escHtml(groupName(groupId))}</strong></p>
-                </div>
-                <button onclick="closeLastSessionModal()" class="text-slate-400 hover:text-slate-200 p-1 transition" title="Cerrar">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-            </div>
-            ${lastSessionBodyHtml(groupId)}`;
-        document.getElementById('lastSessionOverlay').classList.remove('hidden');
-    }
-
-    function showLastSessionChooser(groups) {
-        const rows = groups.map(g => `
-            <button onclick="showLastSessionModal('${g}')" class="w-full bg-white border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 px-4 py-3 rounded-xl text-sm font-medium text-slate-700 flex items-center justify-between transition">
-                <span>${escHtml(groupName(g))}</span>
-                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            </button>`).join('');
-        document.getElementById('lastSessionModal').innerHTML = `
-            <div class="flex items-start justify-between gap-3 mb-4">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-100">📖 Última sesión</h3>
-                    <p class="text-sm text-slate-400">Hoy hay clase con varios grupos. ¿De cuál quieres ver la última sesión?</p>
-                </div>
-                <button onclick="closeLastSessionModal()" class="text-slate-400 hover:text-slate-200 p-1 transition" title="Cerrar">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-            </div>
-            <div class="space-y-2">${rows}</div>`;
-        document.getElementById('lastSessionOverlay').classList.remove('hidden');
-    }
-
-    function closeLastSessionModal() {
-        document.getElementById('lastSessionOverlay').classList.add('hidden');
-    }
-
-    function notifyLastSession() {
-        try {
-            const now = new Date();
-            const nowMin = now.getHours() * 60 + now.getMinutes();
-            const byGroup = getTodayScheduleByGroup();
-            const groups = Object.keys(byGroup);
-            if (!groups.length) return;
-            // Ocultar 5 minutos después del inicio de la primera clase de hoy del grupo
-            const pending = groups.filter(g => nowMin < CLASS_START_MIN[Math.min(...byGroup[g])] + 5);
-            if (!pending.length) return;
-            if (pending.length === 1) showLastSessionModal(pending[0]);
-            else showLastSessionChooser(pending);
-        } catch (e) { console.warn('Aviso de última sesión:', e); }
-    }
 
     // === PWA: Registrar el Service Worker ===
     if ('serviceWorker' in navigator) {
@@ -3896,12 +3593,7 @@ ${body}
         });
     }
     </script>
-    <!-- Aviso de última sesión (se muestra al abrir la app si hoy hay clase) -->
-    <div id="lastSessionOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-        <div id="lastSessionModal" class="glass rounded-2xl p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto"></div>
-    </div>
     <!-- Tooltip del calendario del Diario (hover / pulsación larga) -->
     <div id="cellTooltip" class="cell-tooltip"></div>
 </body>
 </html>
-
