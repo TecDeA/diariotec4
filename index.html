@@ -1278,13 +1278,24 @@
             const rem = remoteApp.courseData[cid] || createEmptyCourseData();
             remoteApp.courseData[cid] = rem;
             if (!loc) return;
-            ['groups', 'students'].forEach(key => {
+            // Fusionar por id todas las colecciones de listas (no solo grupos/alumnado),
+            // para no perder entradas del Diario, observaciones, etc. creadas sin conexión.
+            ['groups', 'students', 'diario', 'observations', 'activities'].forEach(key => {
                 const rr = Array.isArray(rem[key]) ? rem[key] : [];
                 const ll = Array.isArray(loc[key]) ? loc[key] : [];
+                if (!rr.length && ll.length) { rem[key] = ll; recovered += ll.length; return; }
                 ll.forEach(item => {
                     if (item && item.id && !rr.some(x => x.id === item.id)) { rr.push(item); recovered++; }
                 });
                 rem[key] = rr;
+            });
+            // Horario y días no lectivos: añadir las claves locales que falten en el remoto
+            ['schedule', 'nonTeachingDays'].forEach(key => {
+                const ll = loc[key] || {};
+                const rr = rem[key] = rem[key] || {};
+                Object.keys(ll).forEach(k => {
+                    if (!(k in rr)) { rr[k] = ll[k]; recovered++; }
+                });
             });
         });
         return recovered;
@@ -1552,6 +1563,22 @@
         // Si hoy es posterior al fin del curso (incluido verano posterior) → última semana
         return Math.round((endMonday - currentMonday) / (7 * 24 * 60 * 60 * 1000));
     }
+    // En vista diaria (pantallas pequeñas) arrancar mostrando el día de la semana
+    // en el que estamos (lunes-viernes → 0-4). Si hoy es fin de semana o está fuera
+    // del curso, quedarse en el lunes de la semana posicionada.
+    function computeInitialDayOffsetForCourse(courseId) {
+        if (!isDiarioDayMode()) return 0;
+        const course = appData.courses.find(c => c.id === courseId);
+        if (!course) return 0;
+        const today = new Date(); today.setHours(0,0,0,0);
+        const todayStr = toLocalDateStr(today);
+        if (isDateInSummer(todayStr)) return 0;
+        if (today < courseStartMonday(course) || today > courseEndMonday(course)) return 0;
+        const dow = today.getDay();
+        if (dow === 0 || dow === 6) return 0;
+        return dow - 1;
+    }
+
     // Cambia el curso activo y refresca toda la UI.
     // Posiciona el Diario en la semana apropiada del curso destino:
     // semana actual si hoy cae dentro del curso, o primera/última semana en caso contrario.
@@ -1562,7 +1589,7 @@
         normalizeData();
         appData.courseData[id] = data;
         diarioWeekOffset = computeInitialOffsetForCourse(id);
-        diarioDayOffset = 0;
+        diarioDayOffset = computeInitialDayOffsetForCourse(id);
         saveData();
         populateCourseSelector();
         updateAllGroupSelects();
@@ -1586,7 +1613,7 @@
         populateCourseSelector();
         updateAllGroupSelects();
         renderCourseList();
-        diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId); diarioDayOffset = 0;
+        diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId); diarioDayOffset = computeInitialDayOffsetForCourse(appData.currentCourseId);
         showTab(activeTab);
     }
     // Rellena el <select> de cursos de la cabecera conservando la selección.
@@ -3723,7 +3750,7 @@ ${body}
     // Exporta el sobre completo (todos los cursos). Si se quiere exportar solo el curso activo,
     // basta con exportar appData.courseData[currentCourseId], pero lo habitual es llevarse todos.
     function exportAllData() { const b=new Blob([JSON.stringify(appData,null,2)],{type:'application/json'}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=`tec4_diario_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(u); }
-    function importAllData(event) { const f=event.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=function(e) { try { const imp=JSON.parse(e.target.result); if(confirm('¿Reemplazar todos los datos actuales (incluidos todos los cursos)?')) { if (imp && Array.isArray(imp.courses) && imp.courseData) { appData=imp; normalizeAppData(); } else { appData=migrateOldFormat(imp); normalizeAppData(); } normalizeData(); diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId); diarioDayOffset = 0; saveData(); populateCourseSelector(); updateAllGroupSelects(); showTab(isMobileMode() ? 'inicio' : 'diario'); alert('Importado'); } } catch(err) { alert('Error'); } }; r.readAsText(f); event.target.value=''; }
+    function importAllData(event) { const f=event.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=function(e) { try { const imp=JSON.parse(e.target.result); if(confirm('¿Reemplazar todos los datos actuales (incluidos todos los cursos)?')) { if (imp && Array.isArray(imp.courses) && imp.courseData) { appData=imp; normalizeAppData(); } else { appData=migrateOldFormat(imp); normalizeAppData(); } normalizeData(); diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId); diarioDayOffset = computeInitialDayOffsetForCourse(appData.currentCourseId); saveData(); populateCourseSelector(); updateAllGroupSelects(); showTab(isMobileMode() ? 'inicio' : 'diario'); alert('Importado'); } } catch(err) { alert('Error'); } }; r.readAsText(f); event.target.value=''; }
 
     // Cierra el desplegable "Ir a…" al hacer clic fuera de él.
     document.addEventListener('click', function(e) {
@@ -3764,7 +3791,7 @@ ${body}
         }
         // Posicionar el Diario en la semana apropiada del curso activo
         // (semana actual si hoy cae dentro del curso, o primera/última en caso contrario).
-        diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId); diarioDayOffset = 0;
+        diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId); diarioDayOffset = computeInitialDayOffsetForCourse(appData.currentCourseId);
         populateCourseSelector();
         updateAllGroupSelects();
         applyTheme();
