@@ -640,7 +640,7 @@
                     </div>
                     <div>
                         <h1 class="text-xl font-bold text-slate-900">TEC4 Diario de Clase</h1>
-                        <p class="text-slate-500 text-sm hidden sm:block">Tecnología 4º ESO · Andalucía</p>
+                        <p class="text-slate-500 text-sm hidden sm:inline-flex items-center gap-2">Tecnología 4º<span id="appVersionChip" class="hidden text-xs font-semibold bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-full px-2 py-0.5" title="Versión de la app (CACHE_VERSION del service worker)"></span></p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
@@ -3843,6 +3843,23 @@ ${body}
     // basta con exportar appData.courseData[currentCourseId], pero lo habitual es llevarse todos.
     function exportAllData() { const b=new Blob([JSON.stringify(appData,null,2)],{type:'application/json'}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=`tec4_diario_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(u); }
     function importAllData(event) { const f=event.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=function(e) { try { const imp=JSON.parse(e.target.result); if(confirm('¿Reemplazar todos los datos actuales (incluidos todos los cursos)?')) { if (imp && Array.isArray(imp.courses) && imp.courseData) { appData=imp; normalizeAppData(); } else { appData=migrateOldFormat(imp); normalizeAppData(); } normalizeData(); diarioWeekOffset = computeInitialOffsetForCourse(appData.currentCourseId); diarioDayOffset = computeInitialDayOffsetForCourse(appData.currentCourseId); saveData(); populateCourseSelector(); updateAllGroupSelects(); showTab(isMobileMode() ? 'inicio' : 'diario'); alert('Importado'); } } catch(err) { alert('Error'); } }; r.readAsText(f); event.target.value=''; }
+
+    // Chip de versión del banner: se lee CACHE_VERSION directamente de sw.js para que
+    // el banner siempre muestre la versión real publicada, sin duplicar el dato en el HTML.
+    (function loadAppVersionChip() {
+        const chip = document.getElementById('appVersionChip');
+        if (!chip) return;
+        fetch('sw.js', { cache: 'no-cache' })
+            .then(r => r.ok ? r.text() : Promise.reject(new Error('sw.js no disponible')))
+            .then(t => {
+                const m = t.match(/CACHE_VERSION\s*=\s*['"]([^'"]+)['"]/);
+                if (!m) return;
+                const v = m[1].replace(/^tec4-diario-/, '');
+                chip.textContent = v.startsWith('v') ? v : 'v' + v;
+                chip.classList.remove('hidden');
+            })
+            .catch(() => { /* sin versión no se muestra el chip */ });
+    })();
 
     // Cierra el desplegable "Ir a…" al hacer clic fuera de él.
     document.addEventListener('click', function(e) {
