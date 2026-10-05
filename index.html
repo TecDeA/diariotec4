@@ -971,7 +971,7 @@
             <div class="p-6 overflow-y-auto bg-slate-900/50" style="max-height:calc(80vh - 80px)">
                 <div class="mb-4">
                     <div class="flex gap-2 mb-2"><select id="obsType" class="glass-input rounded-lg px-2 py-1.5 text-sm"><option value="positive">✅ Positiva</option><option value="neutral">📝 Normal</option><option value="negative">⚠️ Negativa</option></select><input type="date" id="obsDate" class="glass-input rounded-lg px-2 py-1.5 text-sm"></div>
-                    <textarea id="obsText" rows="2" placeholder="Observación..." class="w-full glass-input rounded-lg px-3 py-2 text-sm resize-none"></textarea>
+                    <textarea id="obsText" rows="3" placeholder="Observación... (admite Markdown: **negrita**, *cursiva*, listas con -)" class="w-full glass-input rounded-lg px-3 py-2 text-sm resize-y min-h-[70px]"></textarea>
                     <div class="mt-2">
                         <label class="block text-xs font-medium text-slate-400 mb-1">Etiquetas</label>
                         <div id="obsTagSelector" class="flex flex-wrap gap-1.5"></div>
@@ -2057,7 +2057,7 @@
     function cancelObsEdit() { resetObsForm(); }
     function saveObservation() { if(!currentObsStudentId) return; const t=document.getElementById('obsText').value.trim(); if(!t) { alert('Escribe algo'); return; } const type=document.getElementById('obsType').value; const date=document.getElementById('obsDate').value||new Date().toISOString().split('T')[0]; const wasEdit=!!editingObsId; if (wasEdit) { const o=data.observations.find(x=>x.id===editingObsId); if (o) { o.text=t; o.type=type; o.date=date; o.tags=[...selectedObsTags]; } } else { data.observations.push({id:generateId(), studentId:currentObsStudentId, text:t, type:type, date:date, tags:[...selectedObsTags]}); } saveData(); resetObsForm(); renderObsList(); renderStudents(); if (!wasEdit) closeObsModal(); }
     function deleteObservation(oid) { if(!confirm('¿Eliminar esta observación?')) return; data.observations=data.observations.filter(o=>o.id!==oid); if (editingObsId===oid) { resetObsForm(); } saveData(); renderObsList(); renderStudents(); }
-    function renderObsList() { const c=document.getElementById('obsList'); const o=data.observations.filter(o=>o.studentId===currentObsStudentId).sort((a,b)=>(b.date||'').localeCompare(a.date||'')); if(!o.length) { c.innerHTML='<p class="text-slate-400 text-center py-4 text-sm">Sin observaciones</p>'; return; } c.innerHTML=o.map(o=>{ const ic=o.type==='positive'?'✅':o.type==='negative'?'⚠️':'📝'; const bg=o.type==='positive'?'bg-emerald-500/10 border-emerald-500/20':o.type==='negative'?'bg-red-500/10 border-red-500/20':'bg-slate-800/40 border-slate-700/40'; const isEditing=editingObsId===o.id; const tagChips=(o.tags||[]).length?`<div class="flex flex-wrap gap-1 mt-1">${o.tags.map(t=>`<span class="act-tag act-tag-on-card" ${tagStyle(t)}>${escHtml(t)}</span>`).join('')}</div>`:''; return `<div class="${bg} ${isEditing?'ring-2 ring-cyan-500/40':''} border rounded-lg px-3 py-2 flex items-start justify-between gap-2"><div class="flex-1 min-w-0"><span class="text-sm">${ic}</span><span class="text-sm text-slate-200 ml-1">${escHtml(o.text)}</span>${tagChips}<div class="text-xs text-slate-400 mt-1">${formatDate(o.date)}</div></div><div class="flex items-center gap-1 flex-shrink-0"><button onclick="editObservation('${o.id}')" class="text-slate-300 hover:text-cyan-400 p-1" title="Editar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="deleteObservation('${o.id}')" class="text-slate-300 hover:text-red-500 p-1" title="Eliminar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></div>`; }).join(''); }
+    function renderObsList() { const c=document.getElementById('obsList'); const o=data.observations.filter(o=>o.studentId===currentObsStudentId).sort((a,b)=>(b.date||'').localeCompare(a.date||'')); if(!o.length) { c.innerHTML='<p class="text-slate-400 text-center py-4 text-sm">Sin observaciones</p>'; return; } c.innerHTML=o.map(o=>{ const ic=o.type==='positive'?'✅':o.type==='negative'?'⚠️':'📝'; const bg=o.type==='positive'?'bg-emerald-500/10 border-emerald-500/20':o.type==='negative'?'bg-red-500/10 border-red-500/20':'bg-slate-800/40 border-slate-700/40'; const isEditing=editingObsId===o.id; const tagChips=(o.tags||[]).length?`<div class="flex flex-wrap gap-1 mt-1">${o.tags.map(t=>`<span class="act-tag act-tag-on-card" ${tagStyle(t)}>${escHtml(t)}</span>`).join('')}</div>`:''; return `<div class="${bg} ${isEditing?'ring-2 ring-cyan-500/40':''} border rounded-lg px-3 py-2 flex items-start justify-between gap-2"><div class="flex-1 min-w-0"><span class="text-sm">${ic}</span><span class="text-sm text-slate-200 ml-1 break-words">${renderMarkdown(escHtml(o.text))}</span>${tagChips}<div class="text-xs text-slate-400 mt-1">${formatDate(o.date)}</div></div><div class="flex items-center gap-1 flex-shrink-0"><button onclick="editObservation('${o.id}')" class="text-slate-300 hover:text-cyan-400 p-1" title="Editar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="deleteObservation('${o.id}')" class="text-slate-300 hover:text-red-500 p-1" title="Eliminar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></div>`; }).join(''); }
 
     // ETIQUETAS DE OBSERVACIONES
     function renderObsTagSelector() { const c=document.getElementById('obsTagSelector'); if(!c) return; const tags=data.obsTags||[]; if(!tags.length) { c.innerHTML='<span class="text-xs text-slate-500">Sin etiquetas definidas</span>'; return; } c.innerHTML=tags.map(t=>`<span class="act-tag act-tag-colors${selectedObsTags.includes(t)?' selected':''}" ${tagStyle(t)} onclick="toggleObsTag('${t.replace(/\\/g,'\\\\').replace(/'/g, "\\'")}')">${escHtml(t)}</span>`).join('')+`<span class="act-tag tag-manager-btn" onclick="openObsTagManager()" title="Gestionar etiquetas">+ Gestionar</span>`; }
@@ -3488,7 +3488,7 @@
                         const sName = student ? student.name : 'Alumno eliminado';
                         const ic = o.type === 'positive' ? '✅' : o.type === 'negative' ? '⚠️' : '📝';
                         const bg = o.type === 'positive' ? 'bg-emerald-500/10 border-emerald-500/20' : o.type === 'negative' ? 'bg-red-500/10 border-red-500/20' : 'bg-slate-800/40 border-slate-700/40';
-                        return `<div class="${bg} border rounded-lg px-3 py-2 flex items-start gap-2"><span class="text-sm">${ic}</span><div class="flex-1 min-w-0"><div class="flex items-center gap-2 flex-wrap"><span class="text-sm font-medium text-slate-200">${escHtml(sName)}</span><span class="text-xs text-slate-400">${formatDate(o.date)}</span></div><p class="text-sm text-slate-300 mt-0.5">${escHtml(o.text)}</p>${(o.tags||[]).length ? `<div class="flex flex-wrap gap-1 mt-1">${o.tags.map(t=>`<span class="act-tag act-tag-on-card" ${tagStyle(t)}>${escHtml(t)}</span>`).join('')}</div>` : ''}</div></div>`;
+                        return `<div class="${bg} border rounded-lg px-3 py-2 flex items-start gap-2"><span class="text-sm">${ic}</span><div class="flex-1 min-w-0"><div class="flex items-center gap-2 flex-wrap"><span class="text-sm font-medium text-slate-200">${escHtml(sName)}</span><span class="text-xs text-slate-400">${formatDate(o.date)}</span></div><p class="text-sm text-slate-300 mt-0.5 break-words">${renderMarkdown(escHtml(o.text))}</p>${(o.tags||[]).length ? `<div class="flex flex-wrap gap-1 mt-1">${o.tags.map(t=>`<span class="act-tag act-tag-on-card" ${tagStyle(t)}>${escHtml(t)}</span>`).join('')}</div>` : ''}</div></div>`;
                     }).join('')}
                 </div>`}
                 <p class="text-xs text-slate-400 mt-2">Las observaciones se sincronizan automáticamente con Firebase y con la pestaña Alumnado.</p>
@@ -3680,6 +3680,21 @@ ${body}
         }
     }
     function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    // Renderiza un subconjunto de Markdown sobre un texto YA escapado como HTML:
+    // **negrita**, *cursiva*, ~~tachado~~, `código`, enlaces http(s), "- " como viñeta
+    // y saltos de línea. Siempre llamar con escHtml() aplicado antes.
+    function renderMarkdown(escaped) {
+        if (!escaped) return '';
+        let h = escaped;
+        h = h.replace(/`([^`\n]+)`/g, '<code style="background:rgba(148,163,184,0.18);padding:1px 4px;border-radius:4px;font-family:ui-monospace,monospace;font-size:0.9em;">$1</code>');
+        h = h.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+        h = h.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+        h = h.replace(/~~([^~\n]+)~~/g, '<del>$1</del>');
+        h = h.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#06b6d4;text-decoration:underline;">$1</a>');
+        h = h.replace(/(^|\n)- (?!\s)/g, '$1• ');
+        h = h.replace(/\n/g, '<br>');
+        return h;
+    }
 
     function buildDiarioReport(groupId) {
         const entries = groupId ? data.diario.filter(d => d.grupo === groupId) : data.diario;
@@ -3816,7 +3831,7 @@ ${body}
             const sName = student ? student.name : 'Alumno eliminado';
             const typeBadge = o.type === 'positive' ? '<span class="badge badge-pos">Positiva</span>' : o.type === 'negative' ? '<span class="badge badge-neg">Negativa</span>' : '<span class="badge badge-neu">Normal</span>';
             const tags = (o.tags || []).join(', ');
-            return `<tr><td>${formatDate(o.date)}</td><td>${escHtml(sName)}</td><td>${typeBadge}</td><td>${escHtml(tags)}</td><td>${escHtml(o.text)}</td></tr>`;
+            return `<tr><td>${formatDate(o.date)}</td><td>${escHtml(sName)}</td><td>${typeBadge}</td><td>${escHtml(tags)}</td><td>${renderMarkdown(escHtml(o.text))}</td></tr>`;
         }).join('');
         const countLabel = selectedStudentIds ? `${students.length} alumno(s) seleccionado(s)` : 'todos los alumnos';
         const tagLabel = selectedTags && selectedTags.length ? ` · etiquetas: ${selectedTags.map(escHtml).join(', ')}` : '';
