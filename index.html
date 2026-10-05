@@ -3019,7 +3019,19 @@
         { r:132, g:204, b:22,  text:'#4d7c0f', solid:'#65a30d' }, // lime
         { r:14,  g:165, b:233, text:'#0369a1', solid:'#0284c7' }  // sky
     ];
+    // Colores fijos para las etiquetas predefinidas de observaciones: el hash determinista
+    // puede dar tonos muy parecidos entre sí (p. ej. "Evaluación Inicial" y "Evaluación Ordinaria"),
+    // así que se les asigna un color claramente diferenciable de la paleta.
+    const OBS_TAG_FIXED_COLORS = {
+        'Evaluación Inicial': 0,   // cyan
+        '1ª Evaluación': 1,        // violet
+        '2ª Evaluación': 2,        // emerald
+        'Evaluación Ordinaria': 4  // rose
+    };
     function tagColor(tag) {
+        if (tag && Object.prototype.hasOwnProperty.call(OBS_TAG_FIXED_COLORS, tag)) {
+            return TAG_PALETTE[OBS_TAG_FIXED_COLORS[tag]];
+        }
         let h = 0;
         const s = String(tag || '');
         for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
