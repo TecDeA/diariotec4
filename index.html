@@ -767,11 +767,21 @@
 
         <!-- ALUMNADO TAB -->
         <section id="tab-alumnado" class="tab-content hidden fade-in">
+            <div class="glass rounded-2xl accordion mb-4" id="acc-listado-alumnado">
+                <button type="button" class="acc-header" onclick="toggleAccordion('acc-listado-alumnado')">
+                    <h2 class="text-lg font-bold text-slate-100">Observaciones alumnado<span class="acc-hint" id="accListadoHint"></span></h2>
+                    <svg class="acc-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div class="acc-body">
+                    <div class="flex items-center justify-between mb-4 flex-wrap gap-2"><div class="flex gap-2 flex-wrap"><select id="filterStudentGrupo" onchange="renderStudents()" class="glass-input rounded-lg px-2 py-2 text-sm"><option value="">Todos</option></select><input type="text" id="searchStudent" oninput="renderStudents()" placeholder="Buscar..." class="glass-input rounded-lg px-3 py-2 text-sm w-40"></div></div>
+                    <div id="studentList" class="max-h-[600px] overflow-y-auto"></div>
+                </div>
+            </div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-1">
                     <div class="glass rounded-2xl accordion mb-4" id="acc-grupos">
                         <button type="button" class="acc-header" onclick="toggleAccordion('acc-grupos')">
-                            <h2 class="text-lg font-bold text-slate-100">Gestión de grupos<span class="acc-hint" id="accGruposHint"></span></h2>
+                            <h2 class="text-lg font-bold text-slate-100">Gestión de grupos de alumnado<span class="acc-hint" id="accGruposHint"></span></h2>
                             <svg class="acc-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
                         <div class="acc-body">
@@ -780,7 +790,9 @@
                             <div id="groupList" class="space-y-2 max-h-72 overflow-y-auto"></div>
                         </div>
                     </div>
-                    <div class="glass rounded-2xl accordion mb-4" id="acc-anadir-alumno">
+                </div>
+                <div class="lg:col-span-1">
+                    <div class="glass rounded-2xl accordion mb-4 lg:mb-0" id="acc-anadir-alumno">
                         <button type="button" class="acc-header" onclick="toggleAccordion('acc-anadir-alumno')">
                             <h2 class="text-lg font-bold text-slate-100">Añadir alumno/a</h2>
                             <svg class="acc-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -793,9 +805,11 @@
                             </form>
                         </div>
                     </div>
-                    <div class="glass rounded-2xl accordion" id="acc-importar-seneca">
+                </div>
+                <div class="lg:col-span-1">
+                    <div class="glass rounded-2xl accordion lg:mb-0" id="acc-importar-seneca">
                         <button type="button" class="acc-header" onclick="toggleAccordion('acc-importar-seneca')">
-                            <h2 class="text-lg font-bold text-slate-100">Importar desde Excel/CSV</h2>
+                            <h2 class="text-lg font-bold text-slate-100">Importar alumnado desde Excel/CSV</h2>
                             <svg class="acc-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
                         <div class="acc-body">
@@ -806,18 +820,6 @@
                                 <input type="file" id="senecaFile" accept=".xlsx,.xls,.csv,.tsv" class="w-full text-sm glass-input rounded-lg px-3 py-2 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:bg-cyan-500/10 file:text-cyan-400 file:font-medium file:cursor-pointer hover:file:bg-cyan-500/20 file:border-cyan-500/30">
                             </div>
                             <button onclick="importSeneca()" class="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white py-2 rounded-xl font-medium hover:from-violet-500 hover:to-purple-500 transition shadow-lg shadow-violet-500/20">Importar alumnado</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="lg:col-span-2">
-                    <div class="glass rounded-2xl accordion" id="acc-listado-alumnado">
-                        <button type="button" class="acc-header" onclick="toggleAccordion('acc-listado-alumnado')">
-                            <h2 class="text-lg font-bold text-slate-100">Listado de alumnado<span class="acc-hint" id="accListadoHint"></span></h2>
-                            <svg class="acc-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                        </button>
-                        <div class="acc-body">
-                            <div class="flex items-center justify-between mb-4 flex-wrap gap-2"><div class="flex gap-2 flex-wrap"><select id="filterStudentGrupo" onchange="renderStudents()" class="glass-input rounded-lg px-2 py-2 text-sm"><option value="">Todos</option></select><input type="text" id="searchStudent" oninput="renderStudents()" placeholder="Buscar..." class="glass-input rounded-lg px-3 py-2 text-sm w-40"></div></div>
-                            <div id="studentList" class="max-h-[600px] overflow-y-auto"></div>
                         </div>
                     </div>
                 </div>
@@ -970,6 +972,10 @@
                 <div class="mb-4">
                     <div class="flex gap-2 mb-2"><select id="obsType" class="glass-input rounded-lg px-2 py-1.5 text-sm"><option value="positive">✅ Positiva</option><option value="neutral">📝 Normal</option><option value="negative">⚠️ Negativa</option></select><input type="date" id="obsDate" class="glass-input rounded-lg px-2 py-1.5 text-sm"></div>
                     <textarea id="obsText" rows="2" placeholder="Observación..." class="w-full glass-input rounded-lg px-3 py-2 text-sm resize-none"></textarea>
+                    <div class="mt-2">
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Etiquetas</label>
+                        <div id="obsTagSelector" class="flex flex-wrap gap-1.5"></div>
+                    </div>
                     <div class="flex gap-2 mt-2">
                         <button onclick="saveObservation()" id="obsSaveBtn" class="bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-4 py-1.5 rounded-lg text-sm hover:from-cyan-500 hover:to-blue-500 transition shadow-lg shadow-cyan-500/20">Guardar</button>
                         <button onclick="cancelObsEdit()" id="obsCancelEditBtn" class="hidden px-4 py-1.5 rounded-lg text-sm text-slate-300 hover:bg-white/5 transition border border-slate-600/40">Cancelar edición</button>
@@ -995,6 +1001,16 @@
             <div class="mb-4"><div class="flex gap-2"><input type="text" id="newTagName" placeholder="Nueva etiqueta..." class="flex-1 glass-input rounded-lg px-3 py-2 text-sm" onkeydown="if(event.key==='Enter'){event.preventDefault();addActivityTag();}"><button onclick="addActivityTag()" class="bg-gradient-to-r from-violet-600 to-purple-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:from-violet-500 hover:to-purple-500 transition shadow-lg shadow-violet-500/20">Añadir</button></div></div>
             <div id="tagManagerList" class="space-y-2 max-h-60 overflow-y-auto"></div>
             <div class="mt-4 flex justify-end"><button onclick="closeTagManager()" class="px-4 py-2 text-sm text-slate-300 hover:bg-white/5 rounded-lg transition border border-slate-600/40">Cerrar</button></div>
+        </div>
+    </div>
+    <!-- Obs Tag Manager Modal -->
+    <div id="obsTagManagerModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+        <div class="glass rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <h3 class="font-bold text-lg mb-1 text-slate-100">Gestionar etiquetas de observaciones</h3>
+            <p class="text-sm text-slate-400 mb-4">Crea o elimina etiquetas para clasificar observaciones. Las predefinidas no se pueden eliminar.</p>
+            <div class="mb-4"><div class="flex gap-2"><input type="text" id="newObsTagName" placeholder="Nueva etiqueta..." class="flex-1 glass-input rounded-lg px-3 py-2 text-sm" onkeydown="if(event.key==='Enter'){event.preventDefault();addObsTag();}"><button onclick="addObsTag()" class="bg-gradient-to-r from-violet-600 to-purple-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:from-violet-500 hover:to-purple-500 transition shadow-lg shadow-violet-500/20">Añadir</button></div></div>
+            <div id="obsTagManagerList" class="space-y-2 max-h-60 overflow-y-auto"></div>
+            <div class="mt-4 flex justify-end"><button onclick="closeObsTagManager()" class="px-4 py-2 text-sm text-slate-300 hover:bg-white/5 rounded-lg transition border border-slate-600/40">Cerrar</button></div>
         </div>
     </div>
     <!-- Diario Entry Modal -->
@@ -1087,6 +1103,17 @@
                 <div id="reportStudentGroupBtns" class="flex flex-wrap gap-1 mb-2 hidden"></div>
                 <div id="reportStudentList" class="space-y-1 max-h-48 overflow-y-auto"></div>
                 <p class="text-xs text-slate-500 mt-2">Marca uno o varios alumnos. El informe incluirá solo las observaciones de los alumnos seleccionados.</p>
+            </div>
+            <div id="reportObsTagOptions" class="hidden mb-4 p-3 rounded-xl border border-slate-700/40 bg-slate-800/30">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-sm font-medium text-slate-300">Etiquetas a incluir</label>
+                    <div class="flex gap-1">
+                        <button type="button" onclick="selectAllReportTags(true)" class="text-xs text-cyan-400 hover:text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/30 transition">Todas</button>
+                        <button type="button" onclick="selectAllReportTags(false)" class="text-xs text-slate-400 hover:text-slate-300 px-2 py-0.5 rounded border border-slate-600/40 transition">Ninguna</button>
+                    </div>
+                </div>
+                <div id="reportTagList" class="flex flex-wrap gap-2"></div>
+                <p class="text-xs text-slate-500 mt-2">Sin selección se incluyen todas las observaciones. Si marcas etiquetas, el informe incluirá solo las observaciones que tengan alguna de ellas.</p>
             </div>
             <div class="grid grid-cols-2 gap-3 mb-3">
                 <button onclick="generateReport('html')" class="bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-3 rounded-xl font-medium hover:from-cyan-500 hover:to-blue-500 transition flex items-center justify-center gap-2">📄 HTML</button>
@@ -1472,13 +1499,15 @@
     let appData = { courses: [], currentCourseId: null, courseData: {} };
     let data = null;
 
-    let currentObsStudentId = null, currentScheduleCell = null, selectedSaberBloque = null, selectedSaberSubbloque = null, selectedSaberes = [], activityFilterTag = null, selectedActivityTags = [], criteriaFilterMode = null, actProposalFilter = null, saberesGroupFilter = null, criteriaGroupFilter = null, informesGroupFilter = null, editingObsId = null, activitiesGroupFilter = null;
+    let currentObsStudentId = null, currentScheduleCell = null, selectedSaberBloque = null, selectedSaberSubbloque = null, selectedSaberes = [], activityFilterTag = null, selectedActivityTags = [], criteriaFilterMode = null, actProposalFilter = null, saberesGroupFilter = null, criteriaGroupFilter = null, informesGroupFilter = null, editingObsId = null, activitiesGroupFilter = null, selectedObsTags = [];
 
     const DEFAULT_ACTIVITY_TAGS = ['Electrónica Analógica', 'Electrónica Digital', 'Programación'];
+    // Etiquetas predefinidas de observaciones: siempre existen y no se pueden eliminar.
+    const DEFAULT_OBS_TAGS = ['Evaluación Inicial', '1ª Evaluación', '2ª Evaluación', 'Evaluación Ordinaria'];
 
     // Devuelve un slice de datos vacío para un curso nuevo.
     function createEmptyCourseData() {
-        return { groups: [], students: [], observations: [], schedule: {}, diario: [], activities: [], activityTags: [...DEFAULT_ACTIVITY_TAGS] };
+        return { groups: [], students: [], observations: [], schedule: {}, diario: [], activities: [], activityTags: [...DEFAULT_ACTIVITY_TAGS], obsTags: [...DEFAULT_OBS_TAGS] };
     }
     // Garantiza que el slice del curso actual (`data`) tenga todas las colecciones.
     function normalizeData() {
@@ -1490,6 +1519,7 @@
         if (!data.diario) data.diario = [];
         if (!data.activities) data.activities = [];
         if (!data.activityTags) data.activityTags = [...DEFAULT_ACTIVITY_TAGS];
+        if (!data.obsTags) data.obsTags = [...DEFAULT_OBS_TAGS];
         if (!data.nonTeachingDays) data.nonTeachingDays = {};
     }
     // Garantiza que el sobre `appData` tenga la estructura esperada.
@@ -1697,7 +1727,8 @@
             schedule: oldData.schedule || {},
             diario: oldData.diario || [],
             activities: oldData.activities || [],
-            activityTags: oldData.activityTags || [...DEFAULT_ACTIVITY_TAGS]
+            activityTags: oldData.activityTags || [...DEFAULT_ACTIVITY_TAGS],
+            obsTags: oldData.obsTags || [...DEFAULT_OBS_TAGS]
         };
         return { courses: [course], currentCourseId: course.id, courseData: { [course.id]: slice } };
     }
@@ -2021,12 +2052,21 @@
     // OBSERVACIONES
     function openObsModal(sid) { currentObsStudentId=sid; const s=data.students.find(s=>s.id===sid); if(!s) return; document.getElementById('obsModalTitle').textContent=`Observaciones: ${s.name}`; editingObsId=null; resetObsForm(); renderObsList(); document.getElementById('obsModal').classList.remove('hidden'); }
     function closeObsModal() { document.getElementById('obsModal').classList.add('hidden'); currentObsStudentId=null; editingObsId=null; }
-    function resetObsForm() { document.getElementById('obsDate').value=new Date().toISOString().split('T')[0]; document.getElementById('obsText').value=''; document.getElementById('obsType').value='neutral'; editingObsId=null; document.getElementById('obsSaveBtn').textContent='Guardar'; document.getElementById('obsCancelEditBtn').classList.add('hidden'); }
-    function editObservation(oid) { const o=data.observations.find(x=>x.id===oid); if(!o) return; editingObsId=oid; document.getElementById('obsType').value=o.type||'neutral'; document.getElementById('obsDate').value=o.date||new Date().toISOString().split('T')[0]; document.getElementById('obsText').value=o.text||''; document.getElementById('obsSaveBtn').textContent='Actualizar'; document.getElementById('obsCancelEditBtn').classList.remove('hidden'); document.getElementById('obsText').focus(); }
+    function resetObsForm() { document.getElementById('obsDate').value=new Date().toISOString().split('T')[0]; document.getElementById('obsText').value=''; document.getElementById('obsType').value='neutral'; editingObsId=null; selectedObsTags=[]; renderObsTagSelector(); document.getElementById('obsSaveBtn').textContent='Guardar'; document.getElementById('obsCancelEditBtn').classList.add('hidden'); }
+    function editObservation(oid) { const o=data.observations.find(x=>x.id===oid); if(!o) return; editingObsId=oid; document.getElementById('obsType').value=o.type||'neutral'; document.getElementById('obsDate').value=o.date||new Date().toISOString().split('T')[0]; document.getElementById('obsText').value=o.text||''; selectedObsTags=[...(o.tags||[])]; renderObsTagSelector(); document.getElementById('obsSaveBtn').textContent='Actualizar'; document.getElementById('obsCancelEditBtn').classList.remove('hidden'); document.getElementById('obsText').focus(); }
     function cancelObsEdit() { resetObsForm(); }
-    function saveObservation() { if(!currentObsStudentId) return; const t=document.getElementById('obsText').value.trim(); if(!t) { alert('Escribe algo'); return; } const type=document.getElementById('obsType').value; const date=document.getElementById('obsDate').value||new Date().toISOString().split('T')[0]; if (editingObsId) { const o=data.observations.find(x=>x.id===editingObsId); if (o) { o.text=t; o.type=type; o.date=date; } } else { data.observations.push({id:generateId(), studentId:currentObsStudentId, text:t, type:type, date:date}); } saveData(); resetObsForm(); renderObsList(); renderStudents(); }
+    function saveObservation() { if(!currentObsStudentId) return; const t=document.getElementById('obsText').value.trim(); if(!t) { alert('Escribe algo'); return; } const type=document.getElementById('obsType').value; const date=document.getElementById('obsDate').value||new Date().toISOString().split('T')[0]; const wasEdit=!!editingObsId; if (wasEdit) { const o=data.observations.find(x=>x.id===editingObsId); if (o) { o.text=t; o.type=type; o.date=date; o.tags=[...selectedObsTags]; } } else { data.observations.push({id:generateId(), studentId:currentObsStudentId, text:t, type:type, date:date, tags:[...selectedObsTags]}); } saveData(); resetObsForm(); renderObsList(); renderStudents(); if (!wasEdit) closeObsModal(); }
     function deleteObservation(oid) { if(!confirm('¿Eliminar esta observación?')) return; data.observations=data.observations.filter(o=>o.id!==oid); if (editingObsId===oid) { resetObsForm(); } saveData(); renderObsList(); renderStudents(); }
-    function renderObsList() { const c=document.getElementById('obsList'); const o=data.observations.filter(o=>o.studentId===currentObsStudentId).sort((a,b)=>(b.date||'').localeCompare(a.date||'')); if(!o.length) { c.innerHTML='<p class="text-slate-400 text-center py-4 text-sm">Sin observaciones</p>'; return; } c.innerHTML=o.map(o=>{ const ic=o.type==='positive'?'✅':o.type==='negative'?'⚠️':'📝'; const bg=o.type==='positive'?'bg-emerald-500/10 border-emerald-500/20':o.type==='negative'?'bg-red-500/10 border-red-500/20':'bg-slate-800/40 border-slate-700/40'; const isEditing=editingObsId===o.id; return `<div class="${bg} ${isEditing?'ring-2 ring-cyan-500/40':''} border rounded-lg px-3 py-2 flex items-start justify-between gap-2"><div class="flex-1 min-w-0"><span class="text-sm">${ic}</span><span class="text-sm text-slate-200 ml-1">${escHtml(o.text)}</span><div class="text-xs text-slate-400 mt-1">${formatDate(o.date)}</div></div><div class="flex items-center gap-1 flex-shrink-0"><button onclick="editObservation('${o.id}')" class="text-slate-300 hover:text-cyan-400 p-1" title="Editar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="deleteObservation('${o.id}')" class="text-slate-300 hover:text-red-500 p-1" title="Eliminar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></div>`; }).join(''); }
+    function renderObsList() { const c=document.getElementById('obsList'); const o=data.observations.filter(o=>o.studentId===currentObsStudentId).sort((a,b)=>(b.date||'').localeCompare(a.date||'')); if(!o.length) { c.innerHTML='<p class="text-slate-400 text-center py-4 text-sm">Sin observaciones</p>'; return; } c.innerHTML=o.map(o=>{ const ic=o.type==='positive'?'✅':o.type==='negative'?'⚠️':'📝'; const bg=o.type==='positive'?'bg-emerald-500/10 border-emerald-500/20':o.type==='negative'?'bg-red-500/10 border-red-500/20':'bg-slate-800/40 border-slate-700/40'; const isEditing=editingObsId===o.id; const tagChips=(o.tags||[]).length?`<div class="flex flex-wrap gap-1 mt-1">${o.tags.map(t=>`<span class="act-tag act-tag-on-card" ${tagStyle(t)}>${escHtml(t)}</span>`).join('')}</div>`:''; return `<div class="${bg} ${isEditing?'ring-2 ring-cyan-500/40':''} border rounded-lg px-3 py-2 flex items-start justify-between gap-2"><div class="flex-1 min-w-0"><span class="text-sm">${ic}</span><span class="text-sm text-slate-200 ml-1">${escHtml(o.text)}</span>${tagChips}<div class="text-xs text-slate-400 mt-1">${formatDate(o.date)}</div></div><div class="flex items-center gap-1 flex-shrink-0"><button onclick="editObservation('${o.id}')" class="text-slate-300 hover:text-cyan-400 p-1" title="Editar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="deleteObservation('${o.id}')" class="text-slate-300 hover:text-red-500 p-1" title="Eliminar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></div>`; }).join(''); }
+
+    // ETIQUETAS DE OBSERVACIONES
+    function renderObsTagSelector() { const c=document.getElementById('obsTagSelector'); if(!c) return; const tags=data.obsTags||[]; if(!tags.length) { c.innerHTML='<span class="text-xs text-slate-500">Sin etiquetas definidas</span>'; return; } c.innerHTML=tags.map(t=>`<span class="act-tag act-tag-colors${selectedObsTags.includes(t)?' selected':''}" ${tagStyle(t)} onclick="toggleObsTag('${t.replace(/\\/g,'\\\\').replace(/'/g, "\\'")}')">${escHtml(t)}</span>`).join('')+`<span class="act-tag tag-manager-btn" onclick="openObsTagManager()" title="Gestionar etiquetas">+ Gestionar</span>`; }
+    function toggleObsTag(tag) { const i=selectedObsTags.indexOf(tag); if(i===-1) selectedObsTags.push(tag); else selectedObsTags.splice(i,1); renderObsTagSelector(); }
+    function openObsTagManager() { renderObsTagManagerList(); document.getElementById('obsTagManagerModal').classList.remove('hidden'); document.getElementById('newObsTagName').value=''; document.getElementById('newObsTagName').focus(); }
+    function closeObsTagManager() { document.getElementById('obsTagManagerModal').classList.add('hidden'); renderObsTagSelector(); }
+    function renderObsTagManagerList() { const c=document.getElementById('obsTagManagerList'); const tags=data.obsTags||[]; if(!tags.length) { c.innerHTML='<p class="text-slate-400 text-center py-4 text-sm">Sin etiquetas</p>'; return; } c.innerHTML=tags.map((t,i)=>{ const count=(data.observations||[]).filter(o=>(o.tags||[]).includes(t)).length; const predefined=DEFAULT_OBS_TAGS.includes(t); return `<div class="flex items-center justify-between bg-slate-800/50 rounded-xl px-4 py-2.5 border border-slate-700/40"><div class="flex items-center gap-2"><span class="act-tag-on-card" ${tagStyle(t)}>${escHtml(t)}</span>${predefined?'<span class="text-xs text-slate-500" title="Etiqueta predefinida: no se puede eliminar">🔒 Predefinida</span>':`<span class="text-xs text-slate-500">${count} observación(es)</span>`}</div>${predefined?'':`<button onclick="deleteObsTag(${i})" class="text-red-400 hover:text-red-300 p-1 transition" title="Eliminar etiqueta"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>`}</div>`; }).join(''); }
+    function addObsTag() { const input=document.getElementById('newObsTagName'); const name=input.value.trim(); if(!name) return; if(!data.obsTags) data.obsTags=[...DEFAULT_OBS_TAGS]; if(data.obsTags.some(t=>t.toLowerCase()===name.toLowerCase())) { alert('Etiqueta ya existente'); return; } data.obsTags.push(name); saveData(); input.value=''; renderObsTagManagerList(); renderObsTagSelector(); }
+    function deleteObsTag(index) { const tag=(data.obsTags||[])[index]; if(!tag) return; if(DEFAULT_OBS_TAGS.includes(tag)) { alert('Las etiquetas predefinidas no se pueden eliminar.'); return; } if(!confirm(`¿Eliminar la etiqueta "${tag}"? Se eliminará de todas las observaciones.`)) return; (data.observations||[]).forEach(o=>{ if(o.tags) o.tags=o.tags.filter(t=>t!==tag); }); data.obsTags.splice(index,1); selectedObsTags=selectedObsTags.filter(t=>t!==tag); saveData(); renderObsTagManagerList(); renderObsTagSelector(); }
 
     // SABERES SELECTOR
     function initSaberSelector(preserveSaberes) { selectedSaberBloque=null; selectedSaberSubbloque=null; if(!preserveSaberes) selectedSaberes=[]; renderSaberBloqueSelector(); updateSaberPreview(); }
@@ -3436,7 +3476,7 @@
                         const sName = student ? student.name : 'Alumno eliminado';
                         const ic = o.type === 'positive' ? '✅' : o.type === 'negative' ? '⚠️' : '📝';
                         const bg = o.type === 'positive' ? 'bg-emerald-500/10 border-emerald-500/20' : o.type === 'negative' ? 'bg-red-500/10 border-red-500/20' : 'bg-slate-800/40 border-slate-700/40';
-                        return `<div class="${bg} border rounded-lg px-3 py-2 flex items-start gap-2"><span class="text-sm">${ic}</span><div class="flex-1 min-w-0"><div class="flex items-center gap-2 flex-wrap"><span class="text-sm font-medium text-slate-200">${escHtml(sName)}</span><span class="text-xs text-slate-400">${formatDate(o.date)}</span></div><p class="text-sm text-slate-300 mt-0.5">${escHtml(o.text)}</p></div></div>`;
+                        return `<div class="${bg} border rounded-lg px-3 py-2 flex items-start gap-2"><span class="text-sm">${ic}</span><div class="flex-1 min-w-0"><div class="flex items-center gap-2 flex-wrap"><span class="text-sm font-medium text-slate-200">${escHtml(sName)}</span><span class="text-xs text-slate-400">${formatDate(o.date)}</span></div><p class="text-sm text-slate-300 mt-0.5">${escHtml(o.text)}</p>${(o.tags||[]).length ? `<div class="flex flex-wrap gap-1 mt-1">${o.tags.map(t=>`<span class="act-tag act-tag-on-card" ${tagStyle(t)}>${escHtml(t)}</span>`).join('')}</div>` : ''}</div></div>`;
                     }).join('')}
                 </div>`}
                 <p class="text-xs text-slate-400 mt-2">Las observaciones se sincronizan automáticamente con Firebase y con la pestaña Alumnado.</p>
@@ -3479,8 +3519,11 @@
         if (type === 'observaciones') {
             studOpts.classList.remove('hidden');
             populateReportStudentList();
+            document.getElementById('reportObsTagOptions').classList.remove('hidden');
+            populateReportTagList();
         } else {
             studOpts.classList.add('hidden');
+            document.getElementById('reportObsTagOptions').classList.add('hidden');
         }
         document.getElementById('reportModal').classList.remove('hidden');
     }
@@ -3546,6 +3589,22 @@
         const checked = Array.from(document.querySelectorAll('.rpt-student-chk:checked')).map(c => c.value);
         return checked.length ? new Set(checked) : null;
     }
+    // === Selección de etiquetas para el informe de observaciones ===
+    function populateReportTagList() {
+        const container = document.getElementById('reportTagList');
+        if (!container) return;
+        const tags = data.obsTags || [];
+        if (!tags.length) { container.innerHTML = '<p class="text-xs text-slate-500">Sin etiquetas definidas.</p>'; return; }
+        container.innerHTML = tags.map(t => `<label class="flex items-center gap-1.5 cursor-pointer p-1 rounded hover:bg-slate-700/30"><input type="checkbox" class="rpt-tag-chk rounded border-slate-600 text-cyan-400" value="${escHtml(t)}"> <span class="act-tag act-tag-colors" ${tagStyle(t)}>${escHtml(t)}</span></label>`).join('');
+    }
+    function selectAllReportTags(value) {
+        document.querySelectorAll('.rpt-tag-chk').forEach(chk => { chk.checked = value; });
+    }
+    // Devuelve las etiquetas marcadas, o null si no se marcó ninguna (incluir todas).
+    function getSelectedReportTags() {
+        const checked = Array.from(document.querySelectorAll('.rpt-tag-chk:checked')).map(c => c.value);
+        return checked.length ? checked : null;
+    }
     function generateReport(format) {
         const type = currentReportType;
         if (!type) return;
@@ -3563,7 +3622,7 @@
             case 'activities-all': body = buildActividadesReport(groupId, 'all'); break;
             case 'activities-used': body = buildActividadesReport(groupId, 'used'); break;
             case 'activities-unused': body = buildActividadesReport(groupId, 'unused'); break;
-            case 'observaciones': body = buildObservacionesReport(groupId, getSelectedReportStudentIds()); break;
+            case 'observaciones': body = buildObservacionesReport(groupId, getSelectedReportStudentIds(), getSelectedReportTags()); break;
         }
         const fullHtml = `<!DOCTYPE html><html lang="es" class="report-doc"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${title}</title>
 <style>
@@ -3724,7 +3783,7 @@ ${body}
         }).join('');
         return `<table><thead><tr><th>Actividad</th><th>Fecha</th><th>Etiquetas</th><th>Criterios</th><th>Sesiones</th></tr></thead><tbody>${rows}</tbody></table>`;
     }
-    function buildObservacionesReport(groupId, selectedStudentIds) {
+    function buildObservacionesReport(groupId, selectedStudentIds, selectedTags) {
         let students = data.students || [];
         if (groupId) students = students.filter(s => s.groupId === groupId);
         // Si se especificaron alumnos concretos, filtrar aún más
@@ -3733,17 +3792,23 @@ ${body}
         }
         const studentIds = new Set(students.map(s => s.id));
         let obs = (data.observations || []).filter(o => studentIds.has(o.studentId));
+        // Filtro por etiquetas: solo observaciones que tengan alguna de las marcadas
+        if (selectedTags && selectedTags.length) {
+            obs = obs.filter(o => (o.tags || []).some(t => selectedTags.includes(t)));
+        }
         if (!students.length) return '<p class="empty">No hay alumnos seleccionados.</p>';
-        if (!obs.length) return '<p class="empty">Sin observaciones registradas para los alumnos seleccionados.</p>';
+        if (!obs.length) return '<p class="empty">Sin observaciones registradas para los alumnos y etiquetas seleccionados.</p>';
         const sorted = obs.slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
         let rows = sorted.map(o => {
             const student = data.students.find(s => s.id === o.studentId);
             const sName = student ? student.name : 'Alumno eliminado';
             const typeBadge = o.type === 'positive' ? '<span class="badge badge-pos">Positiva</span>' : o.type === 'negative' ? '<span class="badge badge-neg">Negativa</span>' : '<span class="badge badge-neu">Normal</span>';
-            return `<tr><td>${formatDate(o.date)}</td><td>${escHtml(sName)}</td><td>${typeBadge}</td><td>${escHtml(o.text)}</td></tr>`;
+            const tags = (o.tags || []).join(', ');
+            return `<tr><td>${formatDate(o.date)}</td><td>${escHtml(sName)}</td><td>${typeBadge}</td><td>${escHtml(tags)}</td><td>${escHtml(o.text)}</td></tr>`;
         }).join('');
         const countLabel = selectedStudentIds ? `${students.length} alumno(s) seleccionado(s)` : 'todos los alumnos';
-        return `<p style="color:#64748b;font-size:0.75rem;margin-bottom:8px;">Mostrando ${obs.length} observación(es) de ${countLabel}.</p><table><thead><tr><th>Fecha</th><th>Alumno</th><th>Tipo</th><th>Observación</th></tr></thead><tbody>${rows}</tbody></table>`;
+        const tagLabel = selectedTags && selectedTags.length ? ` · etiquetas: ${selectedTags.map(escHtml).join(', ')}` : '';
+        return `<p style="color:#64748b;font-size:0.75rem;margin-bottom:8px;">Mostrando ${obs.length} observación(es) de ${countLabel}${tagLabel}.</p><table><thead><tr><th>Fecha</th><th>Alumno</th><th>Tipo</th><th>Etiquetas</th><th>Observación</th></tr></thead><tbody>${rows}</tbody></table>`;
     }
 
     function formatDate(d) { if(!d) return ''; const p=d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
