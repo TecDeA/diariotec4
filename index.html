@@ -3636,7 +3636,11 @@
             case 'activities-unused': body = buildActividadesReport(groupId, 'unused'); break;
             case 'observaciones': body = buildObservacionesReport(groupId, getSelectedReportStudentIds(), getSelectedReportTags()); break;
         }
-        const fullHtml = `<!DOCTYPE html><html lang="es" class="report-doc"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${title}</title>
+        const now = new Date();
+        const pad2 = n => String(n).padStart(2, '0');
+        const dateCode = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
+        const timeCode = `${pad2(now.getHours())}-${pad2(now.getMinutes())}`;
+        const fullHtml = `<!DOCTYPE html><html lang="es" class="report-doc"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${title}_${dateCode}_${timeCode}</title>
 <style>
 body{font-family:'Space Grotesk',Arial,sans-serif;color:#1e293b;margin:2cm;}
 h1{color:#4f46e5;border-bottom:2px solid #4f46e5;padding-bottom:8px;font-size:1.4rem;}
@@ -3667,7 +3671,7 @@ tr:nth-child(even){background:#f8fafc;}
 }
 </style></head><body>
 <h1>${title}</h1>
-<div class="meta">Curso ${escHtml(courseName)} · ${escHtml(groupName)} · Generado el ${new Date().toLocaleDateString('es-ES')} a las ${new Date().toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit'})}</div>
+<div class="meta">Curso ${escHtml(courseName)} · ${escHtml(groupName)} · Generado el ${new Date().toLocaleDateString('es-ES')} a las ${new Date().toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit'})} · Código: ${dateCode}_${timeCode}</div>
 ${body}
 </body></html>`;
         const w = window.open('', '_blank');
