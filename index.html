@@ -1338,33 +1338,56 @@
 
         return new Promise((resolve) => {
             firebaseDebounceTimer = setTimeout(() => {
-                localVersion++;
-                const checksum = computeChecksum(appData);
-                const payload = {
-                    signature: APP_SIGNATURE,
-                    version: localVersion,
-                    checksum: checksum,
-                    payload: appData,
-                    lastUpdated: new Date().toISOString()
-                };
-
-                ignoreRemoteUpdate = true;
-
-                db.ref(FB_PATH + '/data').set(payload)
-                    .then(() => {
-                        remoteVersion = localVersion;
-                        pendingSyncPush = false;
-                        resolve(true);
-                    })
-                    .catch((err) => {
-                        localVersion--;
-                        pendingSyncPush = true;
-                        console.error('Error guardando en Firebase:', err);
-                        resolve(false);
-                    });
+                firebaseDebounceTimer = null;
+                executeFirebasePush().then(resolve);
             }, 600);
         });
     }
+
+    // Escritura en Firebase sin debounce. Se invoca también al ocultar la página
+    // (cambio de app, bloqueo de pantalla o cierre en móvil), porque un temporizador
+    // pendiente puede no llegar a ejecutarse y se perderían los cambios: quedarían
+    // solo en localStorage y el remoto los pisaría al recargar.
+    function executeFirebasePush() {
+        if (!firebaseReady) { pendingSyncPush = true; return Promise.resolve(false); }
+        localVersion++;
+        const checksum = computeChecksum(appData);
+        const payload = {
+            signature: APP_SIGNATURE,
+            version: localVersion,
+            checksum: checksum,
+            payload: appData,
+            lastUpdated: new Date().toISOString()
+        };
+
+        ignoreRemoteUpdate = true;
+
+        return db.ref(FB_PATH + '/data').set(payload)
+            .then(() => {
+                remoteVersion = localVersion;
+                pendingSyncPush = false;
+                return true;
+            })
+            .catch((err) => {
+                localVersion--;
+                pendingSyncPush = true;
+                console.error('Error guardando en Firebase:', err);
+                return false;
+            });
+    }
+
+    // Si hay una escritura aplazada por el debounce, la ejecuta ahora mismo.
+    function flushPendingFirebaseWrite() {
+        if (!firebaseDebounceTimer) return;
+        clearTimeout(firebaseDebounceTimer);
+        firebaseDebounceTimer = null;
+        executeFirebasePush();
+    }
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') flushPendingFirebaseWrite();
+    });
+    window.addEventListener('pagehide', flushPendingFirebaseWrite);
+    window.addEventListener('beforeunload', flushPendingFirebaseWrite);
 
     // Cargar datos desde Firebase al iniciar
     function loadDataFromFirebase() {
