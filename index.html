@@ -640,7 +640,7 @@
                     </div>
                     <div>
                         <h1 class="text-xl font-bold text-slate-900">TEC4 Diario de Clase</h1>
-                        <p class="text-slate-500 text-sm hidden sm:inline-flex items-center gap-2">Tecnología 4º<span id="appVersionChip" class="hidden text-xs font-semibold bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-full px-2 py-0.5" title="Versión de la app (CACHE_VERSION del service worker)"></span></p>
+                        <p class="text-slate-500 text-sm inline-flex items-center gap-2">Tecnología 4º<span id="appVersionChip" class="hidden text-xs font-semibold bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-full px-2 py-0.5" title="Versión de la app (CACHE_VERSION del service worker)"></span></p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
@@ -2345,6 +2345,7 @@
     }
 
     function openDiarioModal(dateStr, dayIdx, hourIdx, groupId) {
+        hideCellTooltip();
         const existingCheck = findEntryForCell(dateStr, hourIdx + 1, groupId);
         // En días no lectivos (JSON importado) no se permiten anotaciones nuevas;
         // las entradas ya existentes sí se pueden consultar/editar.
@@ -2434,6 +2435,7 @@
     }
 
     function closeDiarioModal() {
+        hideCellTooltip();
         document.getElementById('diarioModal').classList.add('hidden');
         diarioModalCell = null;
         editingDiarioId = null;
@@ -2582,6 +2584,7 @@
     }
 
     function renderDiario() {
+        hideCellTooltip();
         const grid = document.getElementById('diarioScheduleGrid');
         if (!grid) return;
 
@@ -2767,7 +2770,7 @@
     function showCellTooltip(text, cell) {
         const t = document.getElementById('cellTooltip');
         if (!t) return;
-        t.textContent = text;
+        t.innerHTML = renderMarkdown(escHtml(text));
         t.style.display = 'block';
         // Posición: centrado sobre la celda, ajustado a los bordes de la ventana
         const r = cell.getBoundingClientRect();
