@@ -1024,7 +1024,7 @@
                 <div id="diarioModalInfo" class="mb-4"></div>
                 <div class="mb-3">
                     <label class="block text-sm font-medium text-slate-300 mb-1">¿Qué has trabajado?</label>
-                    <textarea id="diarioContenido" rows="3" placeholder="Describe lo trabajado..." class="w-full glass-input rounded-lg px-3 py-2 text-sm resize-none"></textarea>
+                    <textarea id="diarioContenido" rows="3" placeholder="Describe lo trabajado... (Markdown: **negrita**, *cursiva*, `código`, - listas)" class="w-full glass-input rounded-lg px-3 py-2 text-sm resize-none"></textarea>
                 </div>
                 <div class="mb-3">
                     <label class="block text-sm font-medium text-slate-300 mb-1">Actividad relacionada</label>
@@ -1043,7 +1043,7 @@
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-slate-300 mb-1">Observaciones</label>
-                    <textarea id="diarioObs" rows="2" placeholder="Notas adicionales..." class="w-full glass-input rounded-lg px-3 py-2 text-sm resize-none"></textarea>
+                    <textarea id="diarioObs" rows="2" placeholder="Notas adicionales... (Markdown: **negrita**, *cursiva*, `código`, - listas)" class="w-full glass-input rounded-lg px-3 py-2 text-sm resize-none"></textarea>
                 </div>
                 <div class="flex gap-2 justify-between">
                     <button id="diarioDeleteBtn" onclick="deleteDiarioFromModal()" class="px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition border border-red-500/20 hidden">Eliminar</button>
@@ -2530,11 +2530,11 @@
             inner += `<span class="font-semibold scell-group-name">${escHtml(group.name)}</span>`;
             if (entry) {
                 inner += `<div class="scell-check" style="color:${gc.text}">✓</div>`;
-                if (opts.preview && entry.contenido) inner += `<div class="scell-preview-text">${escHtml(entry.contenido)}</div>`;
+                if (opts.preview && entry.contenido) inner += `<div class="scell-preview-text">${renderMarkdown(escHtml(entry.contenido))}</div>`;
             }
         } else if (entry) {
             inner += `<div class="scell-check" style="color:#34d399">✓</div>`;
-            if (opts.preview && entry.contenido) inner += `<div class="scell-preview-text">${escHtml(entry.contenido)}</div>`;
+            if (opts.preview && entry.contenido) inner += `<div class="scell-preview-text">${renderMarkdown(escHtml(entry.contenido))}</div>`;
         } else {
             inner += `<span class="opacity-30">+</span>`;
         }
@@ -3709,7 +3709,7 @@ ${body}
             const act = d.actividad ? (data.activities.find(a=>a.id===d.actividad)?.title || '') : '';
             const hLabel = d.hora ? (HOURS[parseInt(d.hora)-1] || d.hora + 'ª') : '';
             const saberes = (d.saberes||[]).map(sid => findSaberById(sid)?.nombre || '').filter(Boolean).join(', ');
-            return `<tr><td>${formatDate(d.fecha)}</td><td>${escHtml(hLabel)}</td><td>${escHtml(g)}</td><td>${escHtml(d.contenido||'')}</td><td>${escHtml(act)}</td><td>${escHtml(saberes)}</td></tr>`;
+            return `<tr><td>${formatDate(d.fecha)}</td><td>${escHtml(hLabel)}</td><td>${escHtml(g)}</td><td>${renderMarkdown(escHtml(d.contenido||''))}</td><td>${escHtml(act)}</td><td>${escHtml(saberes)}</td></tr>`;
         }).join('');
         return `<table><thead><tr><th>Fecha</th><th>Hora</th><th>Grupo</th><th>Contenido</th><th>Actividad</th><th>Saberes</th></tr></thead><tbody>${rows}</tbody></table>`;
     }
@@ -3966,8 +3966,8 @@ ${body}
                 <span>📅 ${formatDate(e.fecha)}</span><span>·</span><span>🕐 ${escHtml(hLabel)}</span>
             </div>
             ${act ? `<div class="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-3 mb-3"><div class="text-xs text-cyan-400 font-semibold mb-1">Actividad</div><div class="text-sm text-slate-200">${escHtml(act)}</div></div>` : ''}
-            ${e.contenido ? `<div class="mb-3"><div class="text-xs text-slate-400 font-semibold mb-1">Contenido</div><p class="text-sm text-slate-200 whitespace-pre-wrap">${escHtml(e.contenido)}</p></div>` : ''}
-            ${e.observaciones ? `<div class="mb-3"><div class="text-xs text-slate-400 font-semibold mb-1">Observaciones</div><p class="text-sm text-slate-300 whitespace-pre-wrap">${escHtml(e.observaciones)}</p></div>` : ''}
+            ${e.contenido ? `<div class="mb-3"><div class="text-xs text-slate-400 font-semibold mb-1">Contenido</div><p class="text-sm text-slate-200 whitespace-pre-wrap">${renderMarkdown(escHtml(e.contenido))}</p></div>` : ''}
+            ${e.observaciones ? `<div class="mb-3"><div class="text-xs text-slate-400 font-semibold mb-1">Observaciones</div><p class="text-sm text-slate-300 whitespace-pre-wrap">${renderMarkdown(escHtml(e.observaciones))}</p></div>` : ''}
             ${saberes.length ? `<div><div class="text-xs text-slate-400 font-semibold mb-1">Saberes trabajados</div><div class="flex flex-wrap gap-1">${saberes.map(s => `<span class="badge-saberes badge-saberes-worked">${escHtml(s.nombre)}</span>`).join('')}</div></div>` : ''}`;
     }
 
